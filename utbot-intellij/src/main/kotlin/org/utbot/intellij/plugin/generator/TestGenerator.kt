@@ -61,6 +61,7 @@ import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.scripting.resolve.classId
+import org.utbot.framework.codegen.RegularImport
 import org.utbot.framework.plugin.api.util.UtContext
 import org.utbot.framework.plugin.api.util.withUtContext
 import org.utbot.intellij.plugin.error.showErrorDialogLater
@@ -457,6 +458,7 @@ object TestGenerator {
                             ImportUtils.addStaticImport(import.qualifierClass, import.memberName, testClass)
                         }
                     }
+                    is RegularImport -> Unit
                 }
             }
         }

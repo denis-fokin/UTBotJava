@@ -2458,7 +2458,8 @@ abstract class AbstractTestCaseGeneratorTest(
 
     fun List<UtValueExecution<*>>.checkCommentsForBasicErrors() {
         val emptyLines = this.filter {
-            it.summary?.contains("\n\n") ?: false
+            // create an issue for this place
+            it.summary?.any { it.toString() == "\n\n" } ?: false
         }
         assertTrue(emptyLines.isEmpty()) { "Empty lines in the comments: ${emptyLines.map { it.summary }.prettify()}" }
     }

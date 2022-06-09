@@ -268,7 +268,7 @@ class ConcreteExecutor<TIResult, TInstrumentation : Instrumentation<TIResult>> p
                                 }
 
                                 try {
-                                    readCommandsChannel.offer(cmd)
+                                    readCommandsChannel.trySend(cmd)
                                 } catch (e: CancellationException) {
                                     s.disposed = true
 

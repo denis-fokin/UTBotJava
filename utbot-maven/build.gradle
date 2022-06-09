@@ -38,7 +38,7 @@ dependencies {
  */
 
 def buildDirectory = buildDir.canonicalPath
-def outputDirectory = compileKotlin.destinationDir.canonicalPath
+def outputDirectory = compileKotlin.destinationDirectory.get().asFile.canonicalPath
 def pomFile = new File("$buildDir/pom.xml")
 def pluginDescriptorFile = new File(outputDirectory, 'META-INF/maven/plugin.xml')
 

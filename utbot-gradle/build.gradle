@@ -20,6 +20,8 @@ dependencies {
     implementation group: 'io.github.microutils', name: 'kotlin-logging', version: kotlin_logging_version
 }
 
+configurations.compile.setCanBeResolved(true)
+
 // needed to prevent inclusion of gradle-api into shadow JAR
 configurations.compile.dependencies.remove dependencies.gradleApi()
 

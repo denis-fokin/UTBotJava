@@ -157,6 +157,7 @@ import org.utbot.framework.plugin.api.util.voidClassId
 import org.utbot.framework.util.isUnit
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
 import java.lang.reflect.InvocationTargetException
+import java.util.Locale
 import kotlin.reflect.jvm.javaType
 
 private const val DEEP_EQUALS_MAX_DEPTH = 5 // TODO move it to plugin settings?
@@ -230,7 +231,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
 
             // prevValue is nullable if not accessible because of getStaticFieldValue(..) : Any?
             val prevValue = newVar(CgClassId(field.type, isNullable = !fieldAccessible),
-                "prev${field.name.capitalize()}") {
+                "prev${field.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }}") {
                 if (fieldAccessible) {
                     declaringClass[field]
                 } else {
@@ -337,6 +338,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                         processExecutionFailure(currentExecution, exception)
                     }
             }
+            null -> Unit
         }
     }
 
@@ -346,6 +348,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                 when (this) {
                     is MethodId -> thisInstance[this](*methodArguments.toTypedArray()).intercepted()
                     is ConstructorId -> this(*methodArguments.toTypedArray()).intercepted()
+                    null -> Unit
                 }
             }
         }
@@ -1111,6 +1114,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                         thisInstance[executable](*methodArguments.toTypedArray())
                     }
                 }
+                null -> Unit
             }
         }
     }
