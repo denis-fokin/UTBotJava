@@ -69,7 +69,7 @@ class FeatureProcessorWithStatesRepetition(
             dumpedStates[stateHashCode] = currentState.features
 
             currentState.stmt.let {
-                if (it !in visitedStmts && !currentState.isInNestedMethod()) {
+                if (it !in visitedStmts && (currentState.executionStack.first().method.declaringClass == currentState.lastMethod?.declaringClass)) {
                     visitedStmts += it
                     newCoverage++
                 }
