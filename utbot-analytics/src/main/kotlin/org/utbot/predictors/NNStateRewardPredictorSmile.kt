@@ -2,6 +2,7 @@ package org.utbot.predictors
 
 import com.google.gson.Gson
 import mu.KotlinLogging
+import org.utbot.analytics.NNStateRewardPredictor
 import org.utbot.framework.UtSettings
 import smile.math.matrix.Matrix
 import java.io.FileReader
@@ -9,7 +10,7 @@ import java.nio.file.Paths
 import kotlin.math.max
 
 private const val DEFAULT_MODEL_PATH = "nn.json"
-private const val DEFAULT_SCALER_PATH = "scaler.txt"
+internal const val DEFAULT_SCALER_PATH = "scaler.txt"
 
 private val logger = KotlinLogging.logger {}
 

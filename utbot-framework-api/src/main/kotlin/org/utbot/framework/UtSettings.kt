@@ -115,6 +115,11 @@ object UtSettings {
     var nnRewardGuidedSelectorType: NNRewardGuidedSelectorType by getEnumProperty(NNRewardGuidedSelectorType.WITHOUT_RECALCULATION)
 
     /**
+     * Type of [NNStateRewardPredictor]
+     */
+    var nnStateRewardPredictorType: NNStateRewardPredictorType by getEnumProperty(NNStateRewardPredictorType.BASE)
+
+    /**
      * Steps limit for path selector.
      */
     var pathSelectorStepsLimit by getIntProperty(3500)
@@ -353,7 +358,6 @@ enum class PathSelectorType {
     SUBPATH_GUIDED_SELECTOR,
     CPI_SELECTOR,
     FORK_DEPTH_SELECTOR,
-    LINEAR_REWARD_GUIDED_SELECTOR,
     NN_REWARD_GUIDED_SELECTOR,
     RANDOM_SELECTOR,
     RANDOM_PATH_SELECTOR
@@ -367,4 +371,10 @@ enum class TestSelectionStrategyType {
 enum class NNRewardGuidedSelectorType {
     WITH_RECALCULATION,
     WITHOUT_RECALCULATION
+}
+
+enum class NNStateRewardPredictorType {
+    BASE,
+    TORCH,
+    LINEAR
 }

@@ -3,6 +3,7 @@ package org.utbot.predictors
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.utbot.analytics.NNStateRewardPredictor
 import org.utbot.examples.withRewardModelPath
 import kotlin.system.measureNanoTime
 

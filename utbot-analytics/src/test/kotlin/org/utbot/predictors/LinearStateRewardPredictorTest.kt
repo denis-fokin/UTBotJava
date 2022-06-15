@@ -18,4 +18,15 @@ class LinearStateRewardPredictorTest {
             assertEquals(listOf(6.0, 6.0), pred.predict(features))
         }
     }
+
+    @Test
+    fun simpleTestNotBatch() {
+        withRewardModelPath("src/test/resources") {
+            val pred = LinearStateRewardPredictor()
+
+            val features = listOf(2.0, 3.0)
+
+            assertEquals(6.0, pred.predict(features))
+        }
+    }
 }

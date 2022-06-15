@@ -1,7 +1,8 @@
 package org.utbot.predictors
 
-import org.utbot.analytics.UtBotAbstractPredictor
+import org.utbot.analytics.NNStateRewardPredictor
 import org.utbot.framework.UtSettings
+import smile.math.MathEx.dot
 import smile.math.matrix.Matrix
 import java.io.File
 
@@ -16,11 +17,12 @@ private fun loadWeights(path: String): Matrix {
     return Matrix(weightsArray)
 }
 
-class LinearStateRewardPredictor(weightsPath: String = DEFAULT_WEIGHT_PATH) :
-    UtBotAbstractPredictor<List<List<Double>>, List<Double>> {
+class LinearStateRewardPredictor(weightsPath: String = DEFAULT_WEIGHT_PATH, scalerPath: String = DEFAULT_SCALER_PATH) :
+    NNStateRewardPredictor {
     private val weights = loadWeights(weightsPath)
+    private val scaler = loadScaler(scalerPath)
 
-    override fun predict(input: List<List<Double>>): List<Double> {
+    fun predict(input: List<List<Double>>): List<Double> {
         // add 1 to each feature vector
         val matrixValues = input
             .map { (it + 1.0).toDoubleArray() }
@@ -29,5 +31,12 @@ class LinearStateRewardPredictor(weightsPath: String = DEFAULT_WEIGHT_PATH) :
         val X = Matrix(matrixValues)
 
         return X.mm(weights).col(0).toList()
+    }
+
+    override fun predict(input: List<Double>): Double {
+        var inputArray = (input + 1.0).toDoubleArray()
+        inputArray = Matrix(inputArray).sub(scaler.mean).div(scaler.variance).col(0)
+
+        return dot(inputArray, weights.col(0))
     }
 }

@@ -24,7 +24,7 @@ import org.utbot.framework.plugin.api.util.UtContext
 import org.utbot.framework.plugin.api.util.id
 import org.utbot.framework.plugin.api.util.withUtContext
 import org.utbot.instrumentation.ConcreteExecutor
-import org.utbot.predictors.NNStateRewardPredictorSmile
+import org.utbot.predictors.NNStateRewardPredictorFactoryImpl
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLClassLoader
@@ -300,6 +300,8 @@ fun main(args: Array<String>) {
         tools = listOf(Tool.UtBot)
     }
 
+    EngineAnalyticsContext.nnStateRewardPredictorFactory = NNStateRewardPredictorFactoryImpl()
+
     val iterations = when {
         UtSettings.singleSelector -> 1
         UtSettings.pathSelectorType == PathSelectorType.SUBPATH_GUIDED_SELECTOR -> UtSettings.subpathGuidedSelectorIndexes.size
@@ -321,7 +323,7 @@ fun main(args: Array<String>) {
             when (UtSettings.pathSelectorType) {
                 PathSelectorType.NN_REWARD_GUIDED_SELECTOR -> {
                     UtSettings.rewardModelPath = Paths.get(modelPath, "$iteration").toFile().absolutePath
-                    Predictors.stateRewardPredictor = NNStateRewardPredictorSmile()
+                    Predictors.stateRewardPredictor = EngineAnalyticsContext.nnStateRewardPredictorFactory()
                 }
                 PathSelectorType.SUBPATH_GUIDED_SELECTOR -> {
                     UtSettings.subpathGuidedSelectorIndex = UtSettings.subpathGuidedSelectorIndexes[iteration]
@@ -329,7 +331,7 @@ fun main(args: Array<String>) {
                 else -> {}
             }
         } else if (UtSettings.pathSelectorType == PathSelectorType.NN_REWARD_GUIDED_SELECTOR) {
-            Predictors.stateRewardPredictor = NNStateRewardPredictorSmile()
+            Predictors.stateRewardPredictor = EngineAnalyticsContext.nnStateRewardPredictorFactory()
         }
 
 

@@ -1,5 +1,3 @@
-package org.utbot.predictors
-
-import org.utbot.analytics.UtBotAbstractPredictor
+package org.utbot.analytics
 
 interface NNStateRewardPredictor : UtBotAbstractPredictor<List<Double>, Double>
