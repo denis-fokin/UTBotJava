@@ -1,11 +1,14 @@
 package org.utbot
 
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVPrinter
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import org.utbot.visual.FigureBuilders
 import org.utbot.visual.HtmlBuilder
 import java.io.File
+import java.io.FileWriter
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -173,12 +176,31 @@ fun main() {
         )
     )
 
+    val date = SimpleDateFormat("yyyy-MM-dd-HH-mm").format(Date())
     // Save report
     htmlBuilder.saveHTML(
         Paths.get(
             QualityAnalysisConfig.outputDir,
             QualityAnalysisConfig.project,
-            SimpleDateFormat("yyyy-MM-dd-HH-mm'.html'").format(Date())
+            "$date.html"
         ).toFile().absolutePath
     )
+
+    CSVPrinter(
+        FileWriter(Paths.get(
+        QualityAnalysisConfig.outputDir,
+        QualityAnalysisConfig.project,
+        "$date.csv"
+    ).toFile()), CSVFormat.EXCEL).use {
+        it.printRecord("metric", *QualityAnalysisConfig.selectors.toTypedArray())
+        it.printRecord("Instructions coverage (sum coverages percentages / classNum)", *instructionMetrics.map { p ->
+            (p.second.sum() / p.second.size).toString()
+        }.toTypedArray())
+        it.printRecord("Instructions coverage(sum covered instructions / sum instructions)", *covInstruction.map { p ->
+            (p.second.sum().toDouble() / (instructions[p.first]?.sum()?.toDouble() ?: 0.0)).toString()
+        }.toTypedArray())
+        it.printRecord("Branch coverage (sum coverages percentages / classNum)", *branchesMetrics.map { p ->
+            (p.second.sum() / p.second.size).toString()
+        }.toTypedArray())
+    }
 }
