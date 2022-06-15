@@ -17,7 +17,6 @@ $WORKDIR/scripts/run_contest_estimator.sh $PROJECT $TIME_LIMIT "$PATH_SELECTOR" 
 
 ./gradlew :utbot-junit-contest:test :utbot-junit-contest:jacocoTestReport
 
-OUTPUT_FOLDER=eval/jacoco2/$PROJECT/$SELECTOR_ALIAS
-rm -rf $OUTPUT_FOLDER
+OUTPUT_FOLDER=eval/jacoco/$PROJECT/$SELECTOR_ALIAS
 mkdir -p $OUTPUT_FOLDER
 mv utbot-junit-contest/build/reports/jacoco/test/html/* "$OUTPUT_FOLDER"/

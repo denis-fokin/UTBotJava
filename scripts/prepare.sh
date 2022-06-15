@@ -1,5 +1,7 @@
 #!/bin/bash
 
+./gradlew clean build -x test
+
 INPUT_FOLDER=contest_input
 
 mkdir $INPUT_FOLDER

@@ -41,7 +41,7 @@ fi
 if [[ -n $FEATURE_PROCESSING ]]; then
   echo "featureProcess=true" >> "$SETTING_PROPERTIES_FILE"
   if [[ -z $FEATURE_PATH ]]; then
-    FEATURE_PATH=eval/features/$PATH_SELECTOR_TYPE/$PROJECT
+    FEATURE_PATH=eval/sixthFeatures/$PATH_SELECTOR_TYPE/$PROJECT
   fi
   echo "featurePath=$FEATURE_PATH" >> "$SETTING_PROPERTIES_FILE"
 fi

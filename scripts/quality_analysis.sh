@@ -1,14 +1,16 @@
 #!/bin/bash
 
 PROJECT=${1}
-SELECTORS=${2}
-STMT_COVERAGE=${3}
+SELECTOR1=${2}
+SELECTOR2=${3}
+STMT_COVERAGE=${4}
 WORKDIR="."
 
 SETTING_PROPERTIES_FILE="$WORKDIR/utbot-analytics/src/main/resources/config.properties"
 touch $SETTING_PROPERTIES_FILE
 echo "project=$PROJECT" > "$SETTING_PROPERTIES_FILE"
-echo "selectors=$SELECTORS" >> "$SETTING_PROPERTIES_FILE"
+echo "selector1=$SELECTOR1" >> "$SETTING_PROPERTIES_FILE"
+echo "selector2=$SELECTOR2" >> "$SETTING_PROPERTIES_FILE"
 
 JAR_TYPE="utbot-analytics-1.0-SNAPSHOT.jar"
 echo "JAR_TYPE: $JAR_TYPE"
