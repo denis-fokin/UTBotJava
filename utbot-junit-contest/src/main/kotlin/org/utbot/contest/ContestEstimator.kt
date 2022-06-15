@@ -46,8 +46,8 @@ private val javaHome = if (System.getProperty("user.name") == "d00555580") {
 } else {
     System.getenv("JAVA_HOME")
 }
-private val javacCmd = "$javaHome/bin/javac"
-private val javaCmd = "$javaHome/bin/java"
+private val javacCmd = "javac"
+private val javaCmd = "java"
 
 fun Array<String>.toText() = joinToString(separator = ",")
 
@@ -257,12 +257,12 @@ fun main(args: Array<String>) {
     // very special case when you run your project directly from IntellijIDEA omitting command line arguments
     if (args.isEmpty() && System.getProperty("os.name")?.run { contains("win", ignoreCase = true) } == true) {
         processedClassesThreshold = 9999 //change to change number of classes to run
-        val timeLimit = 20 // increase if you want to debug something
+        val timeLimit = 30 // increase if you want to debug something
 
         // Uncomment it for debug purposes:
         // you can specify method for test generation in format `classFqn.methodName`
         // examples:
-//        methodFilter = "org.antlr.v4.codegen.model.decl.ContextGetterDecl.*"
+        methodFilter = "org.antlr.v4.codegen.model.decl.ContextGetterDecl.*"
 //        methodFilter = "org.antlr.v4.parse.LeftRecursiveRuleWalker.*"
 //        methodFilter = "com.google.common.graph.Graphs.*"
 //        methodFilter = "com.google.common.math.LongMath.sqrt"
@@ -270,14 +270,14 @@ fun main(args: Array<String>) {
 //        methodFilter = null
 
 //        projectFilter = listOf("samples", "utbottest")
-//        projectFilter = listOf("samples")
+        projectFilter = listOf("antlr")
 //        tools = listOf(Tool.UtBot, Tool.EvoSuite)
 //        tools = listOf(Tool.UtBot)
 //        tools = listOf(Tool.EvoSuite)
 
         // config for SBST 2022
-        methodFilter = null
-        projectFilter = listOf("fastjson-1.2.50", "guava-26.0", "seata-core-0.5.0", "spoon-core-7.0.0")
+//        methodFilter = null
+//        projectFilter = listOf("fastjson-1.2.50", "guava-26.0", "seata-core-0.5.0", "spoon-core-7.0.0")
         tools = listOf(Tool.UtBot)
 
         estimatorArgs = arrayOf(
@@ -288,7 +288,7 @@ fun main(args: Array<String>) {
             moduleTestDir
         )
     } else {
-        require(args.size == 6) {
+        require(args.size == 6 || args.size == 7) {
             "Wrong arguments: <classes dir> <classpath_dir> <time limit (s)> <output dir> <test dir> <junit jar path> expected, but got: ${args.toText()}"
         }
         logger.info { "Command line: [${args.joinToString(" ")}]" }
@@ -328,7 +328,10 @@ fun main(args: Array<String>) {
                 }
                 else -> {}
             }
+        } else if (UtSettings.pathSelectorType == PathSelectorType.NN_REWARD_GUIDED_SELECTOR) {
+            Predictors.stateRewardPredictor = NNStateRewardPredictorSmile()
         }
+
 
         runEstimator(estimatorArgs, methodFilter, projectFilter, processedClassesThreshold, tools, iteration)
         logger.info { "Finished $iteration iteration" }
@@ -439,6 +442,7 @@ fun runEstimator(
 
                     logger.info { "------------- [${project.name}] ---->--- [$classIndex:$classFqn] ---------------------" }
                     logger.info { "TimeLimit: $timeLimit" }
+                    System.err.println("Class $classIndex / ${extendedClassFqn.size}")
 
                     tool.run(project, cut, timeLimit, methodNameFilter, globalStats, compiledTestDir, classFqn)
                 }
