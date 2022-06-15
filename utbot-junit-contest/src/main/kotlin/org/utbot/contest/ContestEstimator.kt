@@ -2,6 +2,7 @@ package org.utbot.contest
 
 import mu.KotlinLogging
 import org.utbot.analytics.EngineAnalyticsContext
+import org.utbot.analytics.Predictors
 import org.utbot.common.FileUtil
 import org.utbot.common.bracket
 import org.utbot.common.info
@@ -17,10 +18,13 @@ import org.utbot.contest.Paths.moduleTestDir
 import org.utbot.contest.Paths.outputDir
 import org.utbot.features.FeatureExtractorFactoryImpl
 import org.utbot.features.FeatureProcessorWithStatesRepetitionFactory
+import org.utbot.framework.PathSelectorType
+import org.utbot.framework.UtSettings
 import org.utbot.framework.plugin.api.util.UtContext
 import org.utbot.framework.plugin.api.util.id
 import org.utbot.framework.plugin.api.util.withUtContext
 import org.utbot.instrumentation.ConcreteExecutor
+import org.utbot.predictors.NNStateRewardPredictorSmile
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLClassLoader
@@ -296,7 +300,41 @@ fun main(args: Array<String>) {
         tools = listOf(Tool.UtBot)
     }
 
-    runEstimator(estimatorArgs, methodFilter, projectFilter, processedClassesThreshold, tools)
+    val iterations = when {
+        UtSettings.singleSelector -> 1
+        UtSettings.pathSelectorType == PathSelectorType.SUBPATH_GUIDED_SELECTOR -> UtSettings.subpathGuidedSelectorIndexes.size
+        UtSettings.pathSelectorType == PathSelectorType.NN_REWARD_GUIDED_SELECTOR -> UtSettings.iterations
+        else -> 1
+    }
+    estimatorArgs[2] = "${(estimatorArgs[2].toInt() + iterations - 1) / iterations}"
+
+
+    logger.info { "PathSelectorType: ${UtSettings.pathSelectorType}" }
+    logger.info { "FeatureProcess: ${UtSettings.featureProcess}" }
+    logger.info { "Iterations: ${UtSettings.iterations}" }
+
+    val modelPath = UtSettings.rewardModelPath
+    (0 until iterations).forEach { iteration ->
+        UtSettings.iteration = iteration
+        logger.info { "Started $iteration iteration" }
+        if (!UtSettings.singleSelector) {
+            when (UtSettings.pathSelectorType) {
+                PathSelectorType.NN_REWARD_GUIDED_SELECTOR -> {
+                    UtSettings.rewardModelPath = Paths.get(modelPath, "$iteration").toFile().absolutePath
+                    Predictors.stateRewardPredictor = NNStateRewardPredictorSmile()
+                }
+                PathSelectorType.SUBPATH_GUIDED_SELECTOR -> {
+                    UtSettings.subpathGuidedSelectorIndex = UtSettings.subpathGuidedSelectorIndexes[iteration]
+                }
+                else -> {}
+            }
+        }
+
+        runEstimator(estimatorArgs, methodFilter, projectFilter, processedClassesThreshold, tools, iteration)
+        logger.info { "Finished $iteration iteration" }
+    }
+
+    exitProcess(1)
 }
 
 
@@ -305,7 +343,8 @@ fun runEstimator(
     methodFilter: String?,
     projectFilter: List<String>?,
     processedClassesThreshold: Int,
-    tools: List<Tool>
+    tools: List<Tool>,
+    iteration: Int
 ) {
 
     val classesLists = File(args[0])
@@ -394,10 +433,12 @@ fun runEstimator(
                         ClassUnderTest(
                             project.classloader.loadClass(classFqn).id,
                             project.outputTestSrcFolder,
-                            project.unzippedDir
+                            project.unzippedDir,
+                            iteration
                         )
 
                     logger.info { "------------- [${project.name}] ---->--- [$classIndex:$classFqn] ---------------------" }
+                    logger.info { "TimeLimit: $timeLimit" }
 
                     tool.run(project, cut, timeLimit, methodNameFilter, globalStats, compiledTestDir, classFqn)
                 }
@@ -410,9 +451,6 @@ fun runEstimator(
 
     logger.info { globalStats }
     ConcreteExecutor.defaultPool.close()
-
-    if (globalStats.statsForClasses.isNotEmpty())
-        exitProcess(1)
 }
 
 private fun moveFolder(sourceFile: File, targetFile: File) {

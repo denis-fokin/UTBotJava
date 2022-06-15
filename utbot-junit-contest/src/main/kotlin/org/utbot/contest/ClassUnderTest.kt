@@ -10,7 +10,8 @@ import java.nio.file.Paths
 class ClassUnderTest(
     val classId: ClassId,
     private val generatedTestsSourcesDir: File,
-    classfileDirSecondaryLocation: File? = null
+    classfileDirSecondaryLocation: File? = null,
+    private val iteration: Int
 ) {
 
     val fqn: String
@@ -37,7 +38,7 @@ class ClassUnderTest(
     val packageName: String get() = fqn.substringBeforeLast('.', "")
     val simpleName: String get() = createTestClassName(fqn)
 
-    val testClassSimpleName: String get() = simpleName + "Test"
+    val testClassSimpleName: String get() = simpleName + "Test${iteration}"
 
     val generatedTestFile: File
         get() = Paths.get(

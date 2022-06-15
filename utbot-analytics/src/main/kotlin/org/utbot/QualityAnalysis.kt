@@ -7,6 +7,8 @@ import org.utbot.visual.FigureBuilders
 import org.utbot.visual.HtmlBuilder
 import java.io.File
 import java.nio.file.Paths
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 data class Coverage(
@@ -176,7 +178,7 @@ fun main() {
         Paths.get(
             QualityAnalysisConfig.outputDir,
             QualityAnalysisConfig.project,
-            "test.html"
+            SimpleDateFormat("yyyy-MM-dd-HH-mm'.html'").format(Date())
         ).toFile().absolutePath
     )
 }

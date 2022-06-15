@@ -145,7 +145,7 @@ fun main(args: Array<String>) {
 
             val classUnderTestName = cmd[1]
             val timeBudgetSec = cmd[2].toLong()
-            val cut = ClassUnderTest(classLoader.loadClass(classUnderTestName).id, outputDir, classfileDir.toFile())
+            val cut = ClassUnderTest(classLoader.loadClass(classUnderTestName).id, outputDir, classfileDir.toFile(), 0)
 
             runGeneration(cut, timeBudgetSec, classpathString, runFromEstimator = false, methodNameFilter = null)
             println("${ContestMessage.READY}")

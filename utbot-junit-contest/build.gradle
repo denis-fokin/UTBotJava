@@ -24,6 +24,9 @@ sourceSets {
             srcDir('build/output/test/spoon')
             srcDir('build/output/test/samples')
             srcDir('build/output/test/utbottest')
+            srcDir('build/output/test/guava-26.0')
+            srcDir('build/output/test/seata-core-0.5.0')
+            srcDir('build/output/test/spoon-core-7.0.0')
         }
     }
 }

@@ -317,6 +317,11 @@ object UtSettings {
     var iterations by getIntProperty(4)
 
     /**
+     * Current iteration of Contest Estimator
+     */
+    var iteration by getIntProperty(0)
+
+    /**
      * Path for state features dir
      */
     var featurePath by getStringProperty("eval/secondFeatures/antlr/INHERITORS_SELECTOR")
