@@ -14,7 +14,7 @@ object QualityAnalysisConfig {
 
     val project: String = properties.getProperty("project")
     val selectors: List<String> = properties.getProperty("selectors").split(",")
-    val covStatistics: List<String> = properties.getProperty("covStatistics").split(",")
+    val covStatistics: List<String> = properties.getProperty("covStatistics")?.split(",") ?: emptyList()
 
     const val outputDir: String = "eval/res"
     val classesList: String = "utbot-junit-contest/src/main/resources/classes/${project}/list"
