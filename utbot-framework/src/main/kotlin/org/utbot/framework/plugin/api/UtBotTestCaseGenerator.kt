@@ -74,7 +74,7 @@ object UtBotTestCaseGenerator : TestCaseGenerator {
         this.isCanceled = isCanceled
         if (isCanceled()) return
 
-        checkFrameworkDependencies(dependencyPaths)
+//        checkFrameworkDependencies(dependencyPaths)
 
         logger.trace("Initializing ${this.javaClass.name} with buildDir = $buildDir, classpath = $classpath")
 
