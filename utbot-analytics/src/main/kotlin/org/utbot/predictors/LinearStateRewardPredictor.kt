@@ -34,8 +34,8 @@ class LinearStateRewardPredictor(weightsPath: String = DEFAULT_WEIGHT_PATH, scal
     }
 
     override fun predict(input: List<Double>): Double {
-        var inputArray = (input + 1.0).toDoubleArray()
-        inputArray = Matrix(inputArray).sub(scaler.mean).div(scaler.variance).col(0)
+        var inputArray =  Matrix(input.toDoubleArray()).sub(scaler.mean).div(scaler.variance).col(0)
+        inputArray += 1.0
 
         return dot(inputArray, weights.col(0))
     }
