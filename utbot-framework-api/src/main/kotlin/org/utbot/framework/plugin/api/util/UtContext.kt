@@ -5,21 +5,29 @@ import org.utbot.common.currentThreadInfo
 import org.utbot.framework.plugin.api.util.UtContext.Companion.setUtContext
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.ThreadContextElement
+import kotlinx.coroutines.runBlocking
+import org.utbot.jcdb.api.ClasspathSet
+import org.utbot.jcdb.api.CompilationDatabase
+import org.utbot.jcdb.compilationDatabase
+import java.io.File
 
 val utContext: UtContext
     get() = UtContext.currentContext()
         ?: error("No context is set. Please use `withUtContext() {...}` or `setUtContext().use {...}`. Thread: ${currentThreadInfo()}")
 
+val jcdb = runBlocking {
+    val jarsOrDirs = listOf<File>()
+    compilationDatabase {
+        this.jre = TODO()
+        this.predefinedDirOrJars = jarsOrDirs
+    }
+}
 
-class UtContext(val classLoader: ClassLoader) : ThreadContextElement<UtContext?> {
+class UtContext(val classpathSet: ClasspathSet) : ThreadContextElement<UtContext?> {
 
     // This StopWatch is used to respect bytecode transforming time while invoking with timeout
     var stopWatch: StopWatch? = null
         private set
-
-    constructor(classLoader: ClassLoader, stopWatch: StopWatch) : this(classLoader) {
-        this.stopWatch = stopWatch
-    }
 
     override fun toString() = "UtContext(classLoader=$classLoader, hashCode=${hashCode()})"
 
@@ -67,6 +75,12 @@ class UtContext(val classLoader: ClassLoader) : ThreadContextElement<UtContext?>
         val prevUtContext = threadLocalContextHolder.get()
         threadLocalContextHolder.set(this)
         return prevUtContext
+    }
+}
+
+fun test() {
+    withUtContext(UtContext(classpath)) {
+        utContext.classpathSet.findClassOrNull("kek")
     }
 }
 

@@ -6,6 +6,7 @@ import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.util.utContext
 import java.io.File
 import java.nio.file.Paths
+import kotlin.reflect.KClass
 
 class ClassUnderTest(
     val classId: ClassId,
@@ -17,7 +18,7 @@ class ClassUnderTest(
         get() = classId.name
     val classLoader: ClassLoader
         get() = utContext.classLoader
-    val kotlinClass
+    val kotlinClass: KClass<*>
         get() = classLoader.loadClass(fqn).kotlin
 
     /**
