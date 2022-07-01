@@ -8,31 +8,19 @@
 
 package org.utbot.framework.plugin.api
 
+import kotlinx.coroutines.runBlocking
 import org.utbot.common.isDefaultValue
 import org.utbot.common.withToStringThreadLocalReentrancyGuard
 import org.utbot.framework.UtSettings
 import org.utbot.framework.plugin.api.MockFramework.MOCKITO
 import org.utbot.framework.plugin.api.impl.FieldIdReflectionStrategy
 import org.utbot.framework.plugin.api.impl.FieldIdSootStrategy
-import org.utbot.framework.plugin.api.util.booleanClassId
-import org.utbot.framework.plugin.api.util.byteClassId
-import org.utbot.framework.plugin.api.util.charClassId
-import org.utbot.framework.plugin.api.util.constructor
-import org.utbot.framework.plugin.api.util.doubleClassId
+import org.utbot.framework.plugin.api.util.*
 import org.utbot.framework.plugin.api.util.executableId
-import org.utbot.framework.plugin.api.util.findFieldOrNull
-import org.utbot.framework.plugin.api.util.floatClassId
 import org.utbot.framework.plugin.api.util.id
-import org.utbot.framework.plugin.api.util.intClassId
-import org.utbot.framework.plugin.api.util.isArray
-import org.utbot.framework.plugin.api.util.isPrimitive
-import org.utbot.framework.plugin.api.util.jClass
-import org.utbot.framework.plugin.api.util.longClassId
-import org.utbot.framework.plugin.api.util.method
-import org.utbot.framework.plugin.api.util.primitiveTypeJvmNameOrNull
-import org.utbot.framework.plugin.api.util.shortClassId
-import org.utbot.framework.plugin.api.util.toReferenceTypeBytecodeSignature
-import org.utbot.framework.plugin.api.util.voidClassId
+import soot.*
+import soot.jimple.JimpleBody
+import soot.jimple.Stmt
 import java.io.File
 import java.lang.reflect.Modifier
 import java.nio.file.Path
@@ -43,21 +31,6 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.full.instanceParameter
 import kotlin.reflect.jvm.javaConstructor
 import kotlin.reflect.jvm.javaType
-import soot.ArrayType
-import soot.BooleanType
-import soot.ByteType
-import soot.CharType
-import soot.DoubleType
-import soot.FloatType
-import soot.IntType
-import soot.LongType
-import soot.RefType
-import soot.ShortType
-import soot.SootClass
-import soot.Type
-import soot.VoidType
-import soot.jimple.JimpleBody
-import soot.jimple.Stmt
 
 data class UtMethod<R>(
     val callable: KCallable<R>,
@@ -637,9 +610,9 @@ open class ClassId(
     val elementClassId: ClassId? = null
 ) {
     open val canonicalName: String
-        get() = jClass.canonicalName ?: error("ClassId $name does not have canonical name")
+        get() = jClass.name ?: error("ClassId $name does not have canonical name")
 
-    open val simpleName: String get() = jClass.simpleName
+    open val simpleName: String get() = jClass.name
 
     /**
      * For regular classes this is just a simple name
@@ -651,43 +624,43 @@ open class ClassId(
             .replace(Regex("[^a-zA-Z0-9]"), "")
             .let { if (this.isArray) it + "Array" else it }
 
-    open val packageName: String get() = jClass.`package`?.name ?: "" // empty package for primitives
+    open val packageName: String get() = jClass.name.replaceAfterLast(".") // empty package for primitives
 
     open val isInDefaultPackage: Boolean
         get() = packageName.isEmpty()
 
     open val isPublic: Boolean
-        get() = Modifier.isPublic(jClass.modifiers)
+        get() = jClass.isPublic
 
     open val isProtected: Boolean
-        get() = Modifier.isProtected(jClass.modifiers)
+        get() = jClass.isProtected
 
     open val isPrivate: Boolean
-        get() = Modifier.isPrivate(jClass.modifiers)
+        get() = jClass.isPrivate
 
     val isPackagePrivate: Boolean
         get() = !(isPublic || isProtected || isPrivate)
 
     open val isFinal: Boolean
-        get() = Modifier.isFinal(jClass.modifiers)
+        get() = jClass.isFinal
 
     open val isStatic: Boolean
-        get() = Modifier.isStatic(jClass.modifiers)
+        get() = jClass.isStatic
 
     open val isAbstract: Boolean
-        get() = Modifier.isAbstract(jClass.modifiers)
+        get() = jClass.isAbstract
 
     open val isAnonymous: Boolean
-        get() = jClass.isAnonymousClass
+        get() = jClass.isAnonymous
 
     open val isLocal: Boolean
         get() = jClass.isLocalClass
 
     open val isInner: Boolean
-        get() = jClass.isMemberClass && !isStatic
+        get() = jClass.isInner
 
     open val isNested: Boolean
-        get() = jClass.enclosingClass != null
+        get() = jClass.isNested
 
     open val isSynthetic: Boolean
         get() = jClass.isSynthetic
@@ -701,16 +674,20 @@ open class ClassId(
      */
     // TODO for now it duplicates overridden methods JIRA:1458
     open val allMethods: Sequence<MethodId>
-        get() = generateSequence(jClass) { it.superclass }
-            .mapNotNull { it.declaredMethods }
-            .flatMap { it.toList() }
-            .map { it.executableId }
+        get() {
+            return runBlocking {
+                generateSequence(jClass) { it.superclass }
+                    .mapNotNull { it.methods }
+                    .flatten()
+                    .map { it.executableId }
+            }
+        }
 
     /**
      * Collects all declared constructors (including private and protected) from class to sequence
      */
     open val allConstructors: Sequence<ConstructorId>
-        get() = jClass.declaredConstructors.asSequence().map { it.executableId }
+        get() = jClass.methods.filtasSequence().map { it.executableId }
 
     open val typeParameters: TypeParameters
         get() = TypeParameters()

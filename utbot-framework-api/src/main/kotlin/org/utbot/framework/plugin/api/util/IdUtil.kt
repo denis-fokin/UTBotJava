@@ -1,16 +1,9 @@
 package org.utbot.framework.plugin.api.util
 
+import kotlinx.coroutines.runBlocking
 import org.utbot.common.findFieldOrNull
-import org.utbot.framework.plugin.api.BuiltinClassId
-import org.utbot.framework.plugin.api.BuiltinMethodId
-import org.utbot.framework.plugin.api.ClassId
-import org.utbot.framework.plugin.api.ConstructorId
-import org.utbot.framework.plugin.api.ExecutableId
-import org.utbot.framework.plugin.api.FieldId
-import org.utbot.framework.plugin.api.MethodId
-import org.utbot.framework.plugin.api.UtModel
-import org.utbot.framework.plugin.api.UtNullModel
-import org.utbot.framework.plugin.api.UtPrimitiveModel
+import org.utbot.framework.plugin.api.*
+import org.utbot.jcdb.impl.types.PredefinedPrimitive
 import java.lang.reflect.Constructor
 import java.lang.reflect.Executable
 import java.lang.reflect.Field
@@ -69,11 +62,15 @@ fun ClassId.primitiveTypeJvmNameOrNull(): String? {
 // TODO: Make jClass, method, constructor and field private for IdUtil and rewrite all the code depending on it.
 // TODO: This is needed to avoid accessing actual Class, Method, Constructor and Field instances for builtin ids.
 // TODO: All the properties of ids can be accessed via corresponding properties in the public API.
-val ClassId.jClass: Class<*>
-    get() = when {
-        isPrimitive -> idToPrimitive[this]!!
-        isArray -> Class.forName(name, true, utContext.classLoader) // TODO: probably rewrite
-        else -> utContext.classLoader.loadClass(name)
+val ClassId.jClass: JCDBClassId
+    get() {
+        return when {
+            isPrimitive -> idToPrimitive[this]!!
+            isArray -> Class.forName(name, true, utContext.classLoader) // TODO: probably rewrite
+            else -> runBlocking { utContext.classpathSet.findClassOrNull(name) }?.let {
+                JCDBClassId(it)
+            } ?: throw IllegalStateException("can't find class $name")
+        }
     }
 
 /**
@@ -218,7 +215,7 @@ val primitiveToId: Map<Class<*>, ClassId> = mapOf(
 
 @Suppress("RemoveRedundantQualifierName")
 val idToPrimitive: Map<ClassId, Class<*>> = mapOf(
-        voidClassId to java.lang.Void.TYPE,
+        voidClassId to PredefinedPrimitive.java.lang.Void.TYPE,
         byteClassId to java.lang.Byte.TYPE,
         shortClassId to java.lang.Short.TYPE,
         charClassId to java.lang.Character.TYPE,
