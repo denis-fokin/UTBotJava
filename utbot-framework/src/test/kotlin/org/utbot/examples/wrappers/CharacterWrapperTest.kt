@@ -8,14 +8,9 @@ import org.utbot.framework.plugin.api.CodegenLanguage
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-// TODO failed Kotlin compilation
 internal class CharacterWrapperTest : AbstractTestCaseGeneratorTest(
     testClass = CharacterWrapper::class,
     testCodeGeneration = true,
-    languagePipelines = listOf(
-        CodeGenerationLanguageLastStage(CodegenLanguage.JAVA),
-        CodeGenerationLanguageLastStage(CodegenLanguage.KOTLIN, CodeGeneration)
-    )
 ) {
     @Test
     fun primitiveToWrapperTest() {

@@ -17,7 +17,7 @@ internal class ModelsIdEqualityExampleTest : AbstractModelBasedTest(
     testCodeGeneration = true,
     languagePipelines = listOf(
         CodeGenerationLanguageLastStage(CodegenLanguage.JAVA),
-        CodeGenerationLanguageLastStage(CodegenLanguage.KOTLIN, CodeGeneration)
+        CodeGenerationLanguageLastStage(CodegenLanguage.KOTLIN)
     )
 ) {
     @Test

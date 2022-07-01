@@ -175,11 +175,15 @@ internal class CgVariableConstructor(val context: CgContext) :
                         is MethodId -> {
                             val caller = statementModel.instance?.let { declareOrGet(it) }
                             val args = params.map { declareOrGet(it) }
+                            // TODO typeParameters?
                             caller[executable](*args.toTypedArray())
                         }
                         is ConstructorId -> {
                             val args = params.map { declareOrGet(it) }
-                            executable(*args.toTypedArray())
+                            executable(
+                                *args.toTypedArray(),
+                                typeParameters = executable.classId.typeParameters
+                            )
                         }
                     }
 

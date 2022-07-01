@@ -58,6 +58,7 @@ import soot.Type
 import soot.VoidType
 import soot.jimple.JimpleBody
 import soot.jimple.Stmt
+import kotlin.reflect.KType
 
 data class UtMethod<R>(
     val callable: KCallable<R>,
@@ -246,7 +247,16 @@ data class UtError(
  */
 sealed class UtModel(
     open val classId: ClassId
-)
+) {
+    open fun copyTypeParameters(other: UtModel): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        classId.typeParameters.parameters = other.classId.typeParameters.parameters
+        return true
+    }
+
+    open fun processGenerics(type: KType) {}
+}
 
 /**
  * Class representing models for values that might have an address.
@@ -359,6 +369,30 @@ data class UtCompositeModel(
     val fields: MutableMap<FieldId, UtModel> = mutableMapOf(),
     val mocks: MutableMap<ExecutableId, List<UtModel>> = mutableMapOf(),
 ) : UtReferenceModel(id, classId) {
+    override fun processGenerics(type: KType) {
+       classId.copyTypeParameters(type)
+    }
+
+    override fun copyTypeParameters(other: UtModel): Boolean {
+        if (!super.copyTypeParameters(other)) return false
+
+        other as UtCompositeModel
+
+        for ((fieldId, otherModel) in other.fields) {
+            if (fields[fieldId]?.copyTypeParameters(otherModel) != true) return false
+        }
+
+        for ((executableId, otherModels) in other.mocks) {
+            val models = mocks[executableId] ?: return false
+            if (models.size != otherModels.size) return false
+
+            for (i in models.indices) {
+                if (!models[i].copyTypeParameters(otherModels[i])) return false
+            }
+        }
+        return true
+    }
+
     //TODO: SAT-891 - rewrite toString() method
     override fun toString() = withToStringThreadLocalReentrancyGuard {
         buildString {
@@ -427,6 +461,17 @@ data class UtArrayModel(
         (0 until length).map { stores[it] ?: constModel }.joinToString(", ", "[", "]")
     }
 
+    override fun copyTypeParameters(other: UtModel): Boolean {
+        if (!super.copyTypeParameters(other)) return false
+
+        other as UtArrayModel
+
+        for ((key, value) in other.stores) {
+            if (stores[key]?.copyTypeParameters(value) != true) return false
+        }
+        return true
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -461,6 +506,87 @@ data class UtAssembleModel(
         get() = instantiationChain + modificationsChain
     val finalInstantiationModel
         get() = instantiationChain.lastOrNull()
+
+//    private fun makeClassId(type: java.lang.reflect.Type): ClassId =
+//        when (type) {
+//            is ParameterizedType -> {
+//                val typeParams = type.actualTypeArguments.map { makeClassId(it) }
+//                chooseClassIdWithConstructor((type.rawType as Class<*>).id)
+//                    .apply { typeParameters.parameters += typeParams }
+//            }
+//            else -> (type as Class<*>).id
+//        }
+//
+//    private fun updateTypeParams(classId: ClassId, type: ParameterizedType?) {
+//        if (type == null) return
+//
+//        model.modificationsChain.map { it ->
+//            for ((i,t) in type.actualTypeArguments.withIndex()) {
+//                if (t is ParameterizedType) {
+//                    if (it is UtExecutableCallModel) {
+//                        it.params[i].classId.typeParameters.parameters = t.actualTypeArguments.map {
+//                            makeClassId(it)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+    override fun processGenerics(type: KType) {
+        classId.copyTypeParameters(type)
+
+        // TODO HACK, might cause problems with type params when program synthesis comes
+        // assume that last statement is constructor call
+        val lastStatement = instantiationChain.last()
+        (lastStatement as? UtExecutableCallModel)?.let {
+            it.executable.classId.typeParameters.parameters = classId.typeParameters.parameters
+        }
+        // TODO mod chain?
+    }
+
+    override fun copyTypeParameters(other: UtModel): Boolean {
+        fun copyChain(chain: List<UtStatementModel>, otherChain: List<UtStatementModel>): Boolean {
+            if (chain.size != otherChain.size) return false
+            for (i in chain.indices) {
+                val instance = chain[i].instance
+                val otherInstance = otherChain[i].instance
+
+                if (instance != null && otherInstance != null) {
+                    if (!instance.copyTypeParameters(otherInstance)) return false
+                } else if (instance != null || otherInstance != null) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        if (!super.copyTypeParameters(other)) return false
+
+        other as UtAssembleModel
+
+        if (origin != null && other.origin != null) {
+            if (!origin.copyTypeParameters(other.origin)) return false
+        } else if (origin != null || other.origin != null) {
+            return false
+        }
+
+        if (!copyChain(instantiationChain, other.instantiationChain)) return false
+
+        if (modificationsChain.size != other.modificationsChain.size) return false
+        for (i in modificationsChain.indices) {
+            val instance = modificationsChain[i].instance
+            val otherInstance = other.modificationsChain[i].instance
+
+            if (instance != null && otherInstance != null) {
+                if (!instance.copyTypeParameters(otherInstance)) return false
+            } else if (instance != null || otherInstance != null) {
+                return false
+            }
+        }
+
+        return true
+    }
 
     override fun toString() = withToStringThreadLocalReentrancyGuard {
         buildString {
@@ -542,12 +668,12 @@ data class UtDirectSetFieldModel(
     val fieldModel: UtModel,
 ) : UtStatementModel(instance) {
     override fun toString(): String = withToStringThreadLocalReentrancyGuard {
-            val modelRepresentation = when (fieldModel) {
-                is UtAssembleModel -> fieldModel.modelName
-                else -> fieldModel.toString()
-            }
-            "${instance.modelName}.${fieldId.name} = $modelRepresentation"
+        val modelRepresentation = when (fieldModel) {
+            is UtAssembleModel -> fieldModel.modelName
+            else -> fieldModel.toString()
         }
+        "${instance.modelName}.${fieldId.name} = $modelRepresentation"
+    }
 
 }
 
@@ -712,8 +838,8 @@ open class ClassId(
     open val allConstructors: Sequence<ConstructorId>
         get() = jClass.declaredConstructors.asSequence().map { it.executableId }
 
-    open val typeParameters: TypeParameters
-        get() = TypeParameters()
+    open val typeParameters: TypeParameters = TypeParameters()
+//        get() = TypeParameters()
 
     open val outerClass: Class<*>?
         get() = jClass.enclosingClass
@@ -1013,7 +1139,7 @@ class BuiltinMethodId(
     override val isPrivate: Boolean = false
 ) : MethodId(classId, name, returnType, parameters)
 
-open class TypeParameters(val parameters: List<ClassId> = emptyList())
+open class TypeParameters(var parameters: List<ClassId> = emptyList())
 
 class WildcardTypeParameter: TypeParameters(emptyList())
 
@@ -1274,4 +1400,17 @@ class DocRegularStmt(val stmt: String) : DocStatement() {
         if (other is DocRegularStmt) this.hashCode() == other.hashCode() else false
 
     override fun hashCode(): Int = stmt.hashCode()
+}
+
+fun ClassId.copyTypeParameters(type: KType) {
+    if (type.arguments.isEmpty()) return
+
+    this.typeParameters.parameters = type.arguments.map {
+        val classId = (it.type?.classifier as KClass<*>).qualifiedName?.let { name -> ClassId(name) } ?: error("")
+        it.type?.let { t ->
+            classId.copyTypeParameters(t)
+        } ?: error("")
+
+        classId
+    }
 }

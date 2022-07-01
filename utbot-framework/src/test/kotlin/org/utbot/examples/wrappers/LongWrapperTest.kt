@@ -12,10 +12,6 @@ import org.junit.jupiter.api.Test
 internal class LongWrapperTest : AbstractTestCaseGeneratorTest(
     testClass = LongWrapper::class,
     testCodeGeneration = true,
-    languagePipelines = listOf(
-        CodeGenerationLanguageLastStage(CodegenLanguage.JAVA),
-        CodeGenerationLanguageLastStage(CodegenLanguage.KOTLIN, CodeGeneration)
-    )
 ) {
     @Test
     fun primitiveToWrapperTest() {

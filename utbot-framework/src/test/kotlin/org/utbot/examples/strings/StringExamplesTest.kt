@@ -19,11 +19,7 @@ import org.utbot.examples.withSolverTimeoutInMillis
 
 internal class StringExamplesTest : AbstractTestCaseGeneratorTest(
     testClass = StringExamples::class,
-    testCodeGeneration = true,
-    languagePipelines = listOf(
-        CodeGenerationLanguageLastStage(CodegenLanguage.JAVA),
-        CodeGenerationLanguageLastStage(CodegenLanguage.KOTLIN, CodeGeneration)
-    )
+    testCodeGeneration = true
 ) {
     @Test
     fun testByteToString() {

@@ -208,7 +208,7 @@ internal class CgKotlinRenderer(context: CgContext, printer: CgPrinter = CgPrint
 
             if (element.isSafetyCast) print(" as? ") else print(" as ")
             print(getKotlinClassString(element.targetType))
-            renderTypeParameters(element.targetType.typeParameters)
+//            renderTypeParameters(element.targetType.typeParameters)
             val initNullable = element.type.isNullable
             if (element.targetType.isNullable || initNullable) print("?")
         }
@@ -339,7 +339,7 @@ internal class CgKotlinRenderer(context: CgContext, printer: CgPrinter = CgPrint
         // TODO consider moving to getKotlinClassString
         print(": ")
         print(getKotlinClassString(element.variableType))
-        renderTypeParameters(element.variableType.typeParameters)
+//        renderTypeParameters(element.variableType.typeParameters)
         val initNullable = element.initializer?.run { type.isNullable } ?: false
         if (element.variableType.isNullable || initNullable) print("?")
     }
@@ -429,7 +429,7 @@ internal class CgKotlinRenderer(context: CgContext, printer: CgPrinter = CgPrint
     }
 
     override fun renderExceptionCatchVariable(exception: CgVariable) {
-        print("${exception.name.escapeNamePossibleKeyword()}: ${exception.type.kClass.simpleName}")
+        print("${exception.name.escapeNamePossibleKeyword()}: ${exception.type.kClass.qualifiedName}")
     }
 
     override fun isAccessibleBySimpleNameImpl(classId: ClassId): Boolean {
@@ -454,11 +454,16 @@ internal class CgKotlinRenderer(context: CgContext, printer: CgPrinter = CgPrint
                 "D", "Ljava/lang/Double;" -> Double::class.simpleName!!
                 "Z", "Ljava/lang/Boolean;" -> Boolean::class.simpleName!!
                 "Ljava/lang/CharSequence;" -> CharSequence::class.simpleName!!
+                "Ljava/lang/Number;" -> Number::class.simpleName!!
                 "Ljava/lang/String;" -> String::class.simpleName!!
                 else -> {
                     // we cannot access kClass for BuiltinClassId
                     // we cannot use simple name here because this class can be not imported
-                    if (id is BuiltinClassId) id.name else id.kClass.id.asString()
+                    var main = if (id is BuiltinClassId) id.name else id.kClass.id.asString()
+                    if (id.typeParameters.parameters.isNotEmpty()) {
+                        main += "<${id.typeParameters.parameters.joinToString(separator = ",") { getKotlinClassString(it) }}>"
+                    }
+                    main
                 }
             }
         }

@@ -88,6 +88,7 @@ import soot.SootField
 import soot.Type
 import soot.VoidType
 import sun.java2d.cmm.lcms.LcmsServiceProvider
+import java.lang.reflect.ParameterizedType
 
 // hack
 const val MAX_LIST_SIZE = 10
@@ -117,7 +118,8 @@ class Resolver(
     private val typeResolver: TypeResolver,
     val holder: UtSolverStatusSAT,
     methodUnderTest: UtMethod<*>,
-    private val softMaxArraySize: Int
+    private val softMaxArraySize: Int,
+    val addrToGenericType: MutableMap<UtAddrExpression, ParameterizedType>,
 ) {
 
     private val classLoader: ClassLoader

@@ -8,14 +8,9 @@ import org.utbot.framework.codegen.CodeGeneration
 import org.utbot.framework.plugin.api.CodegenLanguage
 import org.junit.jupiter.api.Test
 
-// TODO failed Kotlin compilation SAT-1332
 internal class PrimitiveArraysTest : AbstractTestCaseGeneratorTest(
     testClass = PrimitiveArrays::class,
-    testCodeGeneration = true,
-    languagePipelines = listOf(
-        CodeGenerationLanguageLastStage(CodegenLanguage.JAVA),
-        CodeGenerationLanguageLastStage(CodegenLanguage.KOTLIN, CodeGeneration)
-    )
+    testCodeGeneration = true
 ) {
     @Test
     fun testDefaultIntValues() {

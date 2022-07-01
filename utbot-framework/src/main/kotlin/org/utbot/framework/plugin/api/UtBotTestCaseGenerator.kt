@@ -52,6 +52,7 @@ import org.utbot.engine.*
 import soot.Scene
 import soot.jimple.JimpleBody
 import soot.toolkits.graph.ExceptionalUnitGraph
+import java.util.concurrent.Callable
 
 object UtBotTestCaseGenerator : TestCaseGenerator {
 
@@ -297,10 +298,29 @@ object UtBotTestCaseGenerator : TestCaseGenerator {
 
                         engineActions.map { engine.apply(it) }
 
-                        generate(engine).collect {
-                            when (it) {
-                                is UtExecution -> method2executions.getValue(method) += it
-                                is UtError -> method2errors.getValue(method).merge(it.description, 1, Int::plus)
+                        generate(engine).collect { result ->
+                            when (result) {
+                                is UtExecution -> {
+//                                    if (result.result is UtExecutionSuccess) {
+                                    val callable = method.callable
+                                    require(result.stateBefore.parameters.size + 1 == callable.parameters.size)
+                                    require(result.stateAfter.parameters.size + 1 == callable.parameters.size)
+
+                                    for (i in result.stateBefore.parameters.indices) {
+                                        result.stateBefore.parameters[i].processGenerics(callable.parameters[i + 1].type)
+                                        result.stateAfter.parameters[i].processGenerics(callable.parameters[i + 1].type)
+                                    }
+
+                                    when (val res = result.result) {
+                                        is UtExecutionSuccess -> {
+                                            res.model.processGenerics(callable.returnType)
+                                        }
+                                        else -> println("hoho")
+                                    }
+
+                                    method2executions.getValue(method) += result
+                                }
+                                is UtError -> method2errors.getValue(method).merge(result.description, 1, Int::plus)
                             }
                         }
                     }
@@ -391,7 +411,17 @@ object UtBotTestCaseGenerator : TestCaseGenerator {
             runBlockingWithCancellationPredicate(isCanceled) {
                 generateAsync(EngineController(), method, mockStrategy).collect {
                     when (it) {
-                        is UtExecution -> executions += it
+                        is UtExecution -> {
+                            val callable = method.callable
+                            require(it.stateBefore.parameters.size + 1 == callable.parameters.size)
+                            require(it.stateAfter.parameters.size + 1 == callable.parameters.size)
+
+                            for (i in it.stateBefore.parameters.indices) {
+                                it.stateBefore.parameters[i].processGenerics(callable.parameters[i + 1].type)
+                                it.stateAfter.parameters[i].processGenerics(callable.parameters[i + 1].type)
+                            }
+                            executions += it
+                        }
                         is UtError -> errors.merge(it.description, 1, Int::plus)
                     }
                 }

@@ -129,26 +129,8 @@ import org.utbot.framework.UtSettings.processUnknownStatesDuringConcreteExecutio
 import org.utbot.framework.concrete.UtConcreteExecutionData
 import org.utbot.framework.concrete.UtConcreteExecutionResult
 import org.utbot.framework.concrete.UtExecutionInstrumentation
-import org.utbot.framework.plugin.api.ClassId
-import org.utbot.framework.plugin.api.ConcreteExecutionFailureException
-import org.utbot.framework.plugin.api.EnvironmentModels
-import org.utbot.framework.plugin.api.FieldId
-import org.utbot.framework.plugin.api.Instruction
-import org.utbot.framework.plugin.api.MethodId
-import org.utbot.framework.plugin.api.MissingState
+import org.utbot.framework.plugin.api.*
 import org.utbot.framework.plugin.api.Step
-import org.utbot.framework.plugin.api.UtConcreteExecutionFailure
-import org.utbot.framework.plugin.api.UtError
-import org.utbot.framework.plugin.api.UtExecution
-import org.utbot.framework.plugin.api.UtInstrumentation
-import org.utbot.framework.plugin.api.UtMethod
-import org.utbot.framework.plugin.api.UtNullModel
-import org.utbot.framework.plugin.api.UtOverflowFailure
-import org.utbot.framework.plugin.api.UtResult
-import org.utbot.framework.plugin.api.classId
-import org.utbot.framework.plugin.api.graph
-import org.utbot.framework.plugin.api.id
-import org.utbot.framework.plugin.api.onSuccess
 import org.utbot.framework.plugin.api.util.executableId
 import org.utbot.framework.plugin.api.util.id
 import org.utbot.framework.plugin.api.util.jClass
@@ -375,7 +357,7 @@ class UtBotSymbolicEngine(
     /**
      * Contains information about the generic types used in the parameters of the method under test.
      */
-    private val parameterAddrToGenericType = mutableMapOf<UtAddrExpression, ParameterizedType>()
+    private val addrToGenericType = mutableMapOf<UtAddrExpression, ParameterizedType>()
 
     private val preferredCexInstanceCache = mutableMapOf<ObjectValue, MutableSet<SootField>>()
 
@@ -480,7 +462,8 @@ class UtBotSymbolicEngine(
                             typeResolver,
                             state.solver.lastStatus as UtSolverStatusSAT,
                             methodUnderTest,
-                            softMaxArraySize
+                            softMaxArraySize,
+                            addrToGenericType,
                         )
 
                         val resolvedParameters = state.methodUnderTestParameters
@@ -1419,7 +1402,7 @@ class UtBotSymbolicEngine(
             }
 
             queuedSymbolicStateUpdates += typeRegistry.genericTypeParameterConstraint(value.addr, typeStorages).asHardConstraint()
-            parameterAddrToGenericType += value.addr to type
+            addrToGenericType += value.addr to type
 
             typeRegistry.saveObjectParameterTypeStorages(value.addr, typeStorages)
         }
@@ -3567,8 +3550,8 @@ class UtBotSymbolicEngine(
             // Find parameterized type for the object if it is a parameter of the method under test and it has generic type
             val newAddr = addr.accept(solver.rewriter) as UtAddrExpression
             val parameterizedType = when (newAddr.internal) {
-                is UtArraySelectExpression -> parameterAddrToGenericType[findTheMostNestedAddr(newAddr.internal)]
-                is UtBvConst -> parameterAddrToGenericType[newAddr]
+                is UtArraySelectExpression -> addrToGenericType[findTheMostNestedAddr(newAddr.internal)]
+                is UtBvConst -> addrToGenericType[newAddr]
                 else -> null
             }
 
@@ -3725,7 +3708,7 @@ class UtBotSymbolicEngine(
         )
     }
 
-    private suspend fun FlowCollector<UtResult>.processResult(symbolicResult: SymbolicResult? /* null for void only: strange hack */) {
+    suspend fun FlowCollector<UtResult>.processResult(symbolicResult: SymbolicResult? /* null for void only: strange hack */) {
         val resolvedParameters = environment.state.parameters.map { it.value }
 
         //choose types that have biggest priority
@@ -3795,8 +3778,17 @@ class UtBotSymbolicEngine(
         val predictedTestName = Predictors.testName.predict(environment.state.path)
         Predictors.testName.provide(environment.state.path, predictedTestName, "")
 
+        // TODO all type args
+        // TODO use concrete addr
+        val returnType = methodUnderTest.callable.returnType.javaType
+        if (returnType is ParameterizedType) {
+            returnValue?.run {
+                addrToGenericType[addr] = returnType
+            }
+        }
         val resolver =
-            Resolver(hierarchy, updatedMemory, typeRegistry, typeResolver, holder, methodUnderTest, softMaxArraySize)
+            Resolver(hierarchy, updatedMemory, typeRegistry, typeResolver, holder, methodUnderTest, softMaxArraySize,
+                addrToGenericType)
 
         val (modelsBefore, modelsAfter, instrumentation) = resolver.resolveModels(resolvedParameters)
 
@@ -3857,6 +3849,15 @@ class UtBotSymbolicEngine(
                     result = concreteExecutionResult.result,
                     coverage = concreteExecutionResult.coverage
                 )
+
+//                // Copy type parameters from symbolic execution in case of success
+//                val concolicResult = concolicUtExecution.result
+//                val symResult = symbolicUtExecution.result
+//                if (concolicResult is UtExecutionSuccess && symResult is UtExecutionSuccess) {
+//                    // copy just type parameters if models are structurally similar
+//                    val res = concolicResult.model.copyTypeParameters(symResult.model)
+//                    if (!res) logger.debug { "WTF" }
+//                }
 
                 emit(concolicUtExecution)
                 logger.debug { "processResult<${methodUnderTest}>: returned $concolicUtExecution" }

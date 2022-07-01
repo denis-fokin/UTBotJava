@@ -100,7 +100,7 @@ object UtSettings {
      * Timeout for symbolic execution
      *
      */
-    var utBotGenerationTimeoutInMillis by getLongProperty(60000L)
+    var utBotGenerationTimeoutInMillis by getLongProperty(6000000L)
 
     /**
      * Random seed in path selector.

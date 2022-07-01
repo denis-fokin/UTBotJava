@@ -154,8 +154,9 @@ class MockValueConstructor(
             }
         }
 
-
+        System.err.println("id ${model.classId}")
         val javaClass = javaClass(model.classId)
+        System.err.println("class $javaClass")
 
         val classInstance = if (!model.isMock) {
             val notMockInstance = javaClass.anyInstance

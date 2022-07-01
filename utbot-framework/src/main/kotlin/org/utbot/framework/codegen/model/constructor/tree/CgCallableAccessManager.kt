@@ -50,12 +50,7 @@ import org.utbot.framework.codegen.model.util.at
 import org.utbot.framework.codegen.model.util.isAccessibleFrom
 import org.utbot.framework.codegen.model.util.nullLiteral
 import org.utbot.framework.codegen.model.util.resolve
-import org.utbot.framework.plugin.api.BuiltinMethodId
-import org.utbot.framework.plugin.api.ClassId
-import org.utbot.framework.plugin.api.ConstructorId
-import org.utbot.framework.plugin.api.ExecutableId
-import org.utbot.framework.plugin.api.MethodId
-import org.utbot.framework.plugin.api.UtExplicitlyThrownException
+import org.utbot.framework.plugin.api.*
 import org.utbot.framework.plugin.api.util.exceptions
 import org.utbot.framework.plugin.api.util.id
 import org.utbot.framework.plugin.api.util.isArray
@@ -80,7 +75,7 @@ interface CgCallableAccessManager {
 
     operator fun ClassId.get(staticMethodId: MethodId): CgIncompleteMethodCall
 
-    operator fun ConstructorId.invoke(vararg args: Any?): CgExecutableCall
+    operator fun ConstructorId.invoke(vararg args: Any?, typeParameters: TypeParameters = TypeParameters()): CgExecutableCall
 
     operator fun CgIncompleteMethodCall.invoke(vararg args: Any?): CgMethodCall
 }
@@ -98,11 +93,12 @@ internal class CgCallableAccessManagerImpl(val context: CgContext) : CgCallableA
     override operator fun ClassId.get(staticMethodId: MethodId): CgIncompleteMethodCall =
         CgIncompleteMethodCall(staticMethodId, null)
 
-    override operator fun ConstructorId.invoke(vararg args: Any?): CgExecutableCall {
+    override operator fun ConstructorId.invoke(vararg args: Any?, typeParameters: TypeParameters): CgExecutableCall {
         val resolvedArgs = args.resolve()
         val constructorCall = if (this canBeCalledWith resolvedArgs) {
-            CgConstructorCall(this, resolvedArgs.guardedForDirectCallOf(this))
+            CgConstructorCall(this, resolvedArgs.guardedForDirectCallOf(this), typeParameters)
         } else {
+            // TODO typeParameters?
             callWithReflection(resolvedArgs)
         }
         newConstructorCall(this)
@@ -306,6 +302,8 @@ internal class CgCallableAccessManagerImpl(val context: CgContext) : CgCallableA
             val typesInOverloadings = ambiguousOverloads.map { it.parameters[i] }
             val ancestors = typesInOverloadings.filter { arg.type.isSubtypeOf(it) }
 
+            // do not cast to Object
+            if (!ancestors.any { arg.type == it }) return@map arg
             if (ancestors.isNotEmpty()) typeCast(targetType, arg) else arg
         }
 

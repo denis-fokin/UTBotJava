@@ -40,6 +40,8 @@ import soot.Scene
 import soot.SootClass
 import soot.SootField
 import soot.SootMethod
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
 
 abstract class BaseOverriddenWrapper(protected val overriddenClassName: String) : WrapperInterface {
     val overriddenClass: SootClass = Scene.v().getSootClass(overriddenClassName)
@@ -108,6 +110,32 @@ abstract class BaseOverriddenWrapper(protected val overriddenClassName: String) 
  * Wrapper for a particular [java.util.Collection] or [java.util.Map] or [java.util.stream.Stream].
  */
 abstract class BaseContainerWrapper(containerClassName: String) : BaseOverriddenWrapper(containerClassName) {
+    private fun makeClassId(type: Type): ClassId =
+        when (type) {
+            is ParameterizedType -> {
+                val typeParams = type.actualTypeArguments.map { makeClassId(it) }
+                chooseClassIdWithConstructor((type.rawType as Class<*>).id)
+                    .apply { typeParameters.parameters += typeParams }
+            }
+            else -> (type as Class<*>).id
+        }
+
+    private fun updateTypeParams(model: UtAssembleModel, type: ParameterizedType?): UtAssembleModel {
+        if (type == null) return model
+
+        model.modificationsChain.map { it ->
+            for ((i,t) in type.actualTypeArguments.withIndex()) {
+                if (t is ParameterizedType) {
+                    if (it is UtExecutableCallModel) {
+                        it.params[i].classId.typeParameters.parameters = t.actualTypeArguments.map {
+                            makeClassId(it)
+                        }
+                    }
+                }
+            }
+        }
+        return model
+    }
     /**
      * Resolve [wrapper] to [UtAssembleModel] using [resolver].
      */
@@ -119,9 +147,13 @@ abstract class BaseContainerWrapper(containerClassName: String) : BaseOverridden
 
         val classId = chooseClassIdWithConstructor(wrapper.type.sootClass.id)
 
+//        this.addrToGenericType[wrapper.addr]?.actualTypeArguments?.map {
+//            classId.typeParameters.parameters += makeClassId(it)
+//        }
+
         val instantiationChain = mutableListOf<UtStatementModel>()
         val modificationsChain = mutableListOf<UtStatementModel>()
-
+//        updateTypeParams(
         UtAssembleModel(addr, classId, modelName, instantiationChain, modificationsChain)
             .apply {
                 instantiationChain += UtExecutableCallModel(
@@ -135,6 +167,9 @@ abstract class BaseContainerWrapper(containerClassName: String) : BaseOverridden
                     UtExecutableCallModel(this, modificationMethodId, it)
                 }
             }
+//        ,
+//            this.addrToGenericType[wrapper.addr]
+//        )
     }
 
     /**

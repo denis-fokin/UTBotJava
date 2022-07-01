@@ -5,7 +5,7 @@ import java.util.LinkedList
 
 sealed class UtExecutionResult
 
-data class UtExecutionSuccess(val model: UtModel) : UtExecutionResult() {
+data class UtExecutionSuccess(var model: UtModel) : UtExecutionResult() {
     override fun toString() = "$model"
 }
 
