@@ -40,13 +40,15 @@ apply plugin: 'org.jetbrains.intellij'
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     version = '2020.2'
+    type = "IU"
     // to use local IDEA comment out "version" and add localPath instead:
     // localPath 'c:/all/tools/idea'
     plugins = [
             'java',
             // TODO: SAT-1539 - specify version of android plugin to be supported by our kotlin version.
             "org.jetbrains.kotlin:${kotlin_version}-release-IJ2020.2-1",
-            'org.jetbrains.android'
+            'org.jetbrains.android',
+            "JavaScriptLanguage"
     ]
     updateSinceUntilBuild false
 
