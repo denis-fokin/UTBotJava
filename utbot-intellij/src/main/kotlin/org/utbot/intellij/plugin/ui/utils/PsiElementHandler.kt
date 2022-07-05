@@ -1,5 +1,6 @@
 package org.utbot.intellij.plugin.ui.utils
 
+import com.intellij.lang.javascript.psi.JSFile
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -15,6 +16,7 @@ interface PsiElementHandler {
         fun makePsiElementHandler(file: PsiFile): PsiElementHandler =
             when (file) {
                 is KtFile -> KotlinPsiElementHandler()
+                is JSFile -> JsPsiElementHandler()
                 else -> JavaPsiElementHandler()
             }
     }
