@@ -10,7 +10,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
-import org.jetbrains.kotlin.idea.util.projectStructure.module
+import org.jetbrains.kotlin.idea.util.module
 
 object JsActionMethods {
 
