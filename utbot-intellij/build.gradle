@@ -43,6 +43,7 @@ intellij {
     type = "IU"
     // to use local IDEA comment out "version" and add localPath instead:
     // localPath 'c:/all/tools/idea'
+    type = "IU"
     plugins = [
             'java',
             // TODO: SAT-1539 - specify version of android plugin to be supported by our kotlin version.
