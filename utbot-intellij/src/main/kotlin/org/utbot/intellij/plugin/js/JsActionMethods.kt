@@ -6,34 +6,51 @@ import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.module.Module
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
+import org.jetbrains.kotlin.idea.util.projectStructure.module
 
 object JsActionMethods {
 
     const val jsId = "ECMAScript 6"
 
+    private data class PsiTargets(
+        val methods: Set<JSFunction>,
+        val focusedMethod: JSFunction?,
+        val module: Module,
+    )
+
     fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val (methods, focusedMethod) = getPsiTargets(e) ?: return
+        val (methods, focusedMethod, module) = getPsiTargets(e) ?: return
     }
 
     fun update(e: AnActionEvent) {
         e.presentation.isEnabled = getPsiTargets(e) != null
     }
 
-    private fun getPsiTargets(e: AnActionEvent): Pair<Set<JSFunction>, JSFunction?>? {
+    private fun getPsiTargets(e: AnActionEvent): PsiTargets? {
         e.project ?: return null
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return null
         val file = e.getData(CommonDataKeys.PSI_FILE) as? JSFile ?: return null
         val element = findPsiElement(file, editor) ?: return null
+        val module = element.module ?: return null
         val focusedMethod = getContainingMethod(element)
         containingClass(element)?.let {
             val methods = it.functions ?: return null
-            return methods.toSet() to focusedMethod
+            return PsiTargets(
+                methods.toSet(),
+                focusedMethod,
+                module,
+            )
         }
-        return (file.statements.filterIsInstance<JSFunction>().toSet() to focusedMethod)
+        return PsiTargets(
+            file.statements.filterIsInstance<JSFunction>().toSet(),
+            focusedMethod,
+            module,
+        )
     }
 
     private fun getContainingMethod(element: PsiElement): JSFunction? {
