@@ -6,16 +6,17 @@ import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiClass
+import com.intellij.refactoring.util.classMembers.MemberInfo
 import org.jetbrains.kotlin.idea.util.module
 import org.utbot.intellij.plugin.ui.GenerateTestsDialogWindow
 import org.utbot.intellij.plugin.ui.utils.testModule
 
-class JsDialogProcessor {
+object JsDialogProcessor {
 
     fun createDialogAndGenerateTests(
         project: Project,
         srcModule: Module,
-        fileMethods: Set<JSMemberInfo>,
+        fileMethods: Set<MemberInfo>,
         focusedMethod: JSFunction?,
     ) {
         val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
@@ -27,7 +28,7 @@ class JsDialogProcessor {
     private fun createDialog(
         project: Project,
         srcModule: Module,
-        fileMethods: Set<JSMemberInfo>,
+        fileMethods: Set<MemberInfo>,
         focusedMethod: JSFunction?,
     ): JsDialogWindow {
         val testModel = srcModule.testModule(project)

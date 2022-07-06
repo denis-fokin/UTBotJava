@@ -6,6 +6,7 @@ import com.intellij.lang.jvm.actions.updateMethodParametersRequest
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.refactoring.ui.MemberSelectionTable
 import com.intellij.refactoring.util.classMembers.MemberInfo
 import com.intellij.testIntegration.TestIntegrationUtils
 import com.intellij.ui.layout.panel
@@ -15,7 +16,7 @@ import javax.swing.JComponent
 
 class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
 
-    private val functionsTable = JSMemberSelectionTable(emptyList(), null, "")
+    private val functionsTable = MemberSelectionTable(emptyList(), null, "")
 
     private val testSourceFolderField = JsTestFolderComboWithBrowseButton(model)
 
@@ -56,7 +57,7 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
         functionsTable.preferredScrollableViewportSize = JBUI.size(-1, height)
     }
 
-    private fun updateMethodsTable(allMethods: Collection<JSMemberInfo>) {
+    private fun updateMethodsTable(allMethods: Collection<MemberInfo>) {
         val focusedNames = model.focusedMethod?.map { it.name }
         val selectedMethods = allMethods.filter {
             focusedNames?.contains(it.member.name) ?: false
@@ -71,5 +72,5 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
         functionsTable.setMemberInfos(allMethods)
     }
 
-    private fun checkMembers(members: Collection<JSMemberInfo>) = members.forEach { it.isChecked = true }
+    private fun checkMembers(members: Collection<MemberInfo>) = members.forEach { it.isChecked = true }
 }
