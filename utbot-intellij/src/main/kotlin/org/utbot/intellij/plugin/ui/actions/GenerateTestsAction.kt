@@ -20,16 +20,29 @@ import org.jetbrains.kotlin.idea.core.getPackage
 import org.jetbrains.kotlin.idea.core.util.toPsiDirectory
 import org.jetbrains.kotlin.idea.core.util.toPsiFile
 import org.jetbrains.kotlin.psi.KtClass
+import org.utbot.intellij.plugin.js.JsActionMethods
 import java.util.*
 
 class GenerateTestsAction : AnAction() {
+
+    private fun getLanguage(e: AnActionEvent): String {
+        return e.getData(CommonDataKeys.PSI_FILE)?.language?.id ?: ""
+    }
     override fun actionPerformed(e: AnActionEvent) {
+        if (getLanguage(e) == JsActionMethods.jsId) {
+            JsActionMethods.actionPerformed(e)
+            return
+        }
         val project = e.project ?: return
         val psiTargets = getPsiTargets(e) ?: return
         UtTestsDialogProcessor.createDialogAndGenerateTests(project, psiTargets.first, psiTargets.second)
     }
 
     override fun update(e: AnActionEvent) {
+        if (getLanguage(e) == JsActionMethods.jsId) {
+            JsActionMethods.update(e)
+            return
+        }
         e.presentation.isEnabled = getPsiTargets(e) != null
     }
 
