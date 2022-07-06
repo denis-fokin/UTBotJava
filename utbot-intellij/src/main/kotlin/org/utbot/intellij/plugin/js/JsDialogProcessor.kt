@@ -11,16 +11,17 @@ import org.utbot.intellij.plugin.ui.GenerateTestsDialogWindow
 import org.utbot.intellij.plugin.ui.utils.testModule
 
 class JsDialogProcessor {
+
     fun createDialogAndGenerateTests(
         project: Project,
         srcModule: Module,
         fileMethods: Set<JSMemberInfo>,
         focusedMethod: JSFunction?,
     ) {
-        val dialogProcessor = JsDialogProcessor.createDialog(project, srcModule, fileMethods, focusedMethod)
+        val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
         if(!dialogProcessor.showAndGet()) return
 
-        JsDialogProcessor.createTests(project, dialogProcessor.model)
+        createTests(project, dialogProcessor.model)
     }
 
     private fun createDialog(
@@ -28,14 +29,15 @@ class JsDialogProcessor {
         srcModule: Module,
         fileMethods: Set<JSMemberInfo>,
         focusedMethod: JSFunction?,
-    ) {
+    ): JsDialogWindow {
         val testModel = srcModule.testModule(project)
 
         return JsDialogWindow(
             JsTestsModel(
                 project,
                 srcModule,
-                testModule,
+                testModel,
+                fileMethods,
                 if (focusedMethod != null) setOf(focusedMethod) else null,
             )
         )
@@ -44,4 +46,5 @@ class JsDialogProcessor {
     private fun createTests(project: Project, model: JsTestsModel) {
         //TODO
     }
+
 }
