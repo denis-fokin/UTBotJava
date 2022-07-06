@@ -8,10 +8,9 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementFactory
-import com.intellij.psi.PsiFile
+import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.refactoring.classMembers.MemberInfoBase
 import com.intellij.refactoring.util.classMembers.MemberInfo
 import com.intellij.refactoring.util.classMembers.MemberInfoStorage
 import org.jetbrains.kotlin.idea.util.projectStructure.module
@@ -29,6 +28,13 @@ object JsActionMethods {
     fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val (methods, focusedMethod, module) = getPsiTargets(e) ?: return
+        JsDialogProcessor.createDialogAndGenerateTests(
+            project,
+            module,
+            methods,
+            focusedMethod
+        )
+
     }
 
     fun update(e: AnActionEvent) {
@@ -82,9 +88,13 @@ object JsActionMethods {
         val factory = PsiElementFactory.getInstance(project)
         val clazz = factory.createClassFromText("class ++lskgfpa {}", null)
         methods.forEach {
-            clazz.add(it as PsiElement)
+            clazz.add(factory.createMethod(it.name!!, PsiType.VOID)).apply {
+                it.parameterList!!.parameterVariables.forEach { param ->
+                    this.add(factory.createParameter(param.name!!, PsiType.VOID))
+                }
+            }
         }
-        val storage = MemberInfoStorage(clazz, null)
+        val storage = MemberInfoStorage(clazz) { true }
         val infos = storage.getClassMemberInfos(clazz)
         return infos.toSet()
     }
