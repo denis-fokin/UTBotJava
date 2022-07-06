@@ -15,7 +15,7 @@ import javax.swing.JComponent
 
 class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
 
-    private val functionsTable = JSMemberSelectionTable(emptyList(), null, false)
+    private val functionsTable = JSMemberSelectionTable(emptyList(), null, "")
 
     private val testSourceFolderField = JsTestFolderComboWithBrowseButton(model)
 
