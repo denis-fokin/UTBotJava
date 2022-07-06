@@ -7,17 +7,21 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementFactory
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
-import org.jetbrains.kotlin.idea.util.module
+import com.intellij.refactoring.util.classMembers.MemberInfo
+import com.intellij.refactoring.util.classMembers.MemberInfoStorage
+import org.jetbrains.kotlin.idea.util.projectStructure.module
 
 object JsActionMethods {
 
     const val jsId = "ECMAScript 6"
 
     private data class PsiTargets(
-        val methods: Set<JSFunction>,
+        val methods: Set<MemberInfo>,
         val focusedMethod: JSFunction?,
         val module: Module,
     )
@@ -41,13 +45,13 @@ object JsActionMethods {
         containingClass(element)?.let {
             val methods = it.functions ?: return null
             return PsiTargets(
-                methods.toSet(),
+                generateMemberInfo(e.project!!, methods.toList()),
                 focusedMethod,
                 module,
             )
         }
         return PsiTargets(
-            file.statements.filterIsInstance<JSFunction>().toSet(),
+            generateMemberInfo(e.project!!, file.statements.filterIsInstance<JSFunction>()),
             focusedMethod,
             module,
         )
@@ -73,4 +77,15 @@ object JsActionMethods {
 
     private fun containingClass(element: PsiElement) =
         PsiTreeUtil.getParentOfType(element, ES6Class::class.java, false)
+
+    private fun generateMemberInfo(project: Project, methods: List<JSFunction>): Set<MemberInfo> {
+        val factory = PsiElementFactory.getInstance(project)
+        val clazz = factory.createClassFromText("class ++lskgfpa {}", null)
+        methods.forEach {
+            clazz.add(it as PsiElement)
+        }
+        val storage = MemberInfoStorage(clazz, null)
+        val infos = storage.getClassMemberInfos(clazz)
+        return infos.toSet()
+    }
 }
