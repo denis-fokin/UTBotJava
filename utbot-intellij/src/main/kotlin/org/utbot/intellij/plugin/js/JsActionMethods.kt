@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.idea.util.projectStructure.module
 
 object JsActionMethods {
 
-    const val jsId = "ECMAScript 6"
+    private const val jsId = "ECMAScript 6"
     val jsLanguage : Language = Language.findLanguageByID(jsId) ?: error("JavaScript language wasn't found")
 
 
