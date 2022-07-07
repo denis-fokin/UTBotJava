@@ -13,7 +13,7 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
 
     private val items = model.fileMethods
 
-    private val functionsTable = JSMemberSelectionTable(items, null, "").apply {
+    private val functionsTable = JSMemberSelectionTable(items, null, null).apply {
         items?.let {
             val height = this.rowHeight * (items.size.coerceAtMost(12) + 1)
             this.preferredScrollableViewportSize = JBUI.size(-1, height)
