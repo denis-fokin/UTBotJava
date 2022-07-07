@@ -16,7 +16,7 @@ object JsDialogProcessor {
     fun createDialogAndGenerateTests(
         project: Project,
         srcModule: Module,
-        fileMethods: Set<MemberInfo>,
+        fileMethods: Set<JSMemberInfo>,
         focusedMethod: JSFunction?,
     ) {
         val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
@@ -28,7 +28,7 @@ object JsDialogProcessor {
     private fun createDialog(
         project: Project,
         srcModule: Module,
-        fileMethods: Set<MemberInfo>,
+        fileMethods: Set<JSMemberInfo>,
         focusedMethod: JSFunction?,
     ): JsDialogWindow {
         val testModel = srcModule.testModule(project)
