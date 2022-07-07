@@ -38,7 +38,6 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
                 scrollPane(functionsTable)
             }
         }
-
         initDefaultValues()
         updateFunctionsTable()
         return panel
@@ -50,11 +49,12 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
     }
 
     private fun updateFunctionsTable() {
-        val items = model.fileMethods!!
-        updateMethodsTable(items)
-
-        val height = functionsTable.rowHeight * (items.size.coerceAtMost(12) + 1)
-        functionsTable.preferredScrollableViewportSize = JBUI.size(-1, height)
+        val items = model.fileMethods
+        items?.let{
+            updateMethodsTable(items)
+            val height = functionsTable.rowHeight * (items.size.coerceAtMost(12) + 1)
+            functionsTable.preferredScrollableViewportSize = JBUI.size(-1, height)
+        }
     }
 
     private fun updateMethodsTable(allMethods: Collection<JSMemberInfo>) {
@@ -62,13 +62,11 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
         val selectedMethods = allMethods.filter {
             focusedNames?.contains(it.member.name) ?: false
         }
-
         if (selectedMethods.isEmpty()) {
             checkMembers(allMethods)
         } else {
             checkMembers(selectedMethods)
         }
-
         functionsTable.setMemberInfos(allMethods)
     }
 
