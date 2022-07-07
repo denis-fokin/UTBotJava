@@ -22,7 +22,6 @@ object JsActionMethods {
     private const val jsId = "ECMAScript 6"
     val jsLanguage : Language = Language.findLanguageByID(jsId) ?: error("JavaScript language wasn't found")
 
-
     private data class PsiTargets(
         val methods: Set<JSMemberInfo>,
         val focusedMethod: JSFunction?,
@@ -100,7 +99,11 @@ object JsActionMethods {
             .fold("") {acc, s -> "$acc, $s" }
         return "${method.name} (${str.drop(1)}) {}\n"
     }
-
+    /*
+        Small hack: generating a string source code of an "impossible" class in order to
+        generate a PsiFile with it, then extract ES6Class from it, then extract MemberInfos.
+        Created for top-level functions, but used even if a functions is a method of a class.
+     */
     private fun generateMemberInfo(project: Project, methods: List<JSFunction>): Set<JSMemberInfo> {
         val strClazz = buildClassStringFromMethods(methods)
         val abstractPsiFile = PsiFileFactory.getInstance(project)
