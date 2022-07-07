@@ -12,7 +12,7 @@ data class JsTestsModel(
     val project: Project,
     val srcModule: Module,
     val testModule: Module,
-    val fileMethods: Set<MemberInfo>?,
+    val fileMethods: Set<JSMemberInfo>?,
     val focusedMethod: Set<JSFunction>?,
 ) {
     var testSourceRoot: VirtualFile? = null

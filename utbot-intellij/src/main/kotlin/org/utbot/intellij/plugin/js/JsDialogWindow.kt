@@ -16,7 +16,7 @@ import javax.swing.JComponent
 
 class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
 
-    private val functionsTable = MemberSelectionTable(emptyList(), null, "")
+    private val functionsTable = JSMemberSelectionTable(emptyList(), null, "")
 
     private val testSourceFolderField = JsTestFolderComboWithBrowseButton(model)
 
@@ -57,7 +57,7 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
         functionsTable.preferredScrollableViewportSize = JBUI.size(-1, height)
     }
 
-    private fun updateMethodsTable(allMethods: Collection<MemberInfo>) {
+    private fun updateMethodsTable(allMethods: Collection<JSMemberInfo>) {
         val focusedNames = model.focusedMethod?.map { it.name }
         val selectedMethods = allMethods.filter {
             focusedNames?.contains(it.member.name) ?: false
@@ -72,5 +72,5 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
         functionsTable.setMemberInfos(allMethods)
     }
 
-    private fun checkMembers(members: Collection<MemberInfo>) = members.forEach { it.isChecked = true }
+    private fun checkMembers(members: Collection<JSMemberInfo>) = members.forEach { it.isChecked = true }
 }
