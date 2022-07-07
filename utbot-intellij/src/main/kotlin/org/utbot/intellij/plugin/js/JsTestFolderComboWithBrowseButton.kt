@@ -45,7 +45,6 @@ class JsTestFolderComboWithBrowseButton(private val model: JsTestsModel): Combob
                 }
             }
         }
-
         val testRoots = model.testModule.suitableTestSourceRoots(CodegenLanguage.JAVA).toMutableList()
         model.testModule.addDedicatedTestRoot(testRoots)
         if (testRoots.isNotEmpty()) {
@@ -53,12 +52,10 @@ class JsTestFolderComboWithBrowseButton(private val model: JsTestsModel): Combob
         } else {
             newItemList(setOf(SET_TEST_FOLDER))
         }
-
         addActionListener {
             val testSourceRoot = createNewTestSourceRoot(model)
             testSourceRoot?.let {
                 model.testSourceRoot = it
-
                 if (childComponent.itemCount == 1 && childComponent.selectedItem == SET_TEST_FOLDER) {
                     newItemList(setOf(it))
                 } else {
@@ -83,7 +80,6 @@ class JsTestFolderComboWithBrowseButton(private val model: JsTestsModel): Combob
     private fun configureRootsCombo(testRoots: List<VirtualFile>) {
         // unfortunately, Gradle creates Kotlin test source root with Java source root type, so type is misleading
         val selectedRoot = testRoots.first()
-
         model.testSourceRoot = selectedRoot
         newItemList(testRoots.toSet())
     }

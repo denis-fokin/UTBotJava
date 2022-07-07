@@ -11,7 +11,9 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.psi.*
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.util.projectStructure.module
 
@@ -34,7 +36,6 @@ object JsActionMethods {
             methods,
             focusedMethod
         )
-
     }
 
     fun update(e: AnActionEvent) {
@@ -45,20 +46,19 @@ object JsActionMethods {
         e.project ?: return null
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return null
         val file = e.getData(CommonDataKeys.PSI_FILE) as? JSFile ?: return null
-
         val element = findPsiElement(file, editor) ?: return null
         val module = element.module ?: return null
         val focusedMethod = getContainingMethod(element)
         containingClass(element)?.let {
             val methods = it.functions ?: return null
             return PsiTargets(
-                generateMemberInfo(e.project!!, methods.toList(), element),
+                generateMemberInfo(e.project!!, methods.toList()),
                 focusedMethod,
                 module,
             )
         }
         return PsiTargets(
-            generateMemberInfo(e.project!!, file.statements.filterIsInstance<JSFunction>(), element),
+            generateMemberInfo(e.project!!, file.statements.filterIsInstance<JSFunction>()),
             focusedMethod,
             module,
         )
@@ -78,33 +78,31 @@ object JsActionMethods {
         if (element == null && offset == file.textLength) {
             element = file.findElementAt(offset - 1)
         }
-
         return element
     }
 
     private fun containingClass(element: PsiElement) =
         PsiTreeUtil.getParentOfType(element, ES6Class::class.java, false)
 
-    private fun generateMemberInfo(project: Project, methods: List<JSFunction>, element: PsiElement): Set<JSMemberInfo> {
-
+    private fun buildClassStringFromMethods(methods: List<JSFunction>): String {
         var strBuilder = "\n"
-        methods.forEach {
-            if (it.name != "constructor") {
-                strBuilder += it.name + '('
-                if (it.parameterVariables.isNotEmpty()) {
-                    strBuilder += it.parameterVariables.first().name
-                    val params = it.parameterVariables.takeLast(it.parameterVariables.size - 1)
-                    params.forEach { param ->
-                        strBuilder += ", " + param.name!!
-                    }
-                }
-                strBuilder += ") {}\n"
-            }
+        val filteredMethods = methods.filterNot { method -> method.name == "constructor" }
+        filteredMethods.forEach {
+            strBuilder += buildStringForMethod(it)
         }
-        val strClazz = "class ++rep {$strBuilder}"
+        return "class askfajsghalwig {$strBuilder}"
+    }
 
+    private fun buildStringForMethod(method: JSFunction): String {
+        val str = method.parameterVariables.map { it.name ?: error("No Js method name!") }
+            .fold("") {acc, s -> "$acc, $s" }
+        return "${method.name} (${str.drop(1)}) {}\n"
+    }
 
-        val abstractPsiFile = PsiFileFactory.getInstance(project).createFileFromText(Language.findLanguageByID(jsId)!!, strClazz)
+    private fun generateMemberInfo(project: Project, methods: List<JSFunction>): Set<JSMemberInfo> {
+        val strClazz = buildClassStringFromMethods(methods)
+        val abstractPsiFile = PsiFileFactory.getInstance(project)
+            .createFileFromText(Language.findLanguageByID(jsId)!!, strClazz)
         val clazz = PsiTreeUtil.getChildOfType(abstractPsiFile, JSClass::class.java)
         val res = mutableListOf<JSMemberInfo>()
         JSMemberInfo.extractClassMembers(clazz!!, res) { true }
