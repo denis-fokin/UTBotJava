@@ -12,7 +12,7 @@ class JsTestsModel(
     project: Project,
     srcModule: Module,
     testModule: Module,
-    val fileMethods: Set<JSMemberInfo>?,
+    val fileMethods: Set<JSMemberInfo>,
     val focusedMethod: Set<JSFunction>?,
 ) : BaseTestsModel(
     project,
