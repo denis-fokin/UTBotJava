@@ -20,6 +20,8 @@ import org.jetbrains.kotlin.idea.util.projectStructure.module
 object JsActionMethods {
 
     const val jsId = "ECMAScript 6"
+    val jsLanguage : Language = Language.findLanguageByID(jsId) ?: error("JavaScript language wasn't found")
+
 
     private data class PsiTargets(
         val methods: Set<JSMemberInfo>,
@@ -102,7 +104,7 @@ object JsActionMethods {
     private fun generateMemberInfo(project: Project, methods: List<JSFunction>): Set<JSMemberInfo> {
         val strClazz = buildClassStringFromMethods(methods)
         val abstractPsiFile = PsiFileFactory.getInstance(project)
-            .createFileFromText(Language.findLanguageByID(jsId)!!, strClazz)
+            .createFileFromText(jsLanguage, strClazz)
         val clazz = PsiTreeUtil.getChildOfType(abstractPsiFile, JSClass::class.java)
         val res = mutableListOf<JSMemberInfo>()
         JSMemberInfo.extractClassMembers(clazz!!, res) { true }
