@@ -41,7 +41,21 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
             }
         }
         initDefaultValues()
+        checkBoxUpdate()
         return panel
+    }
+
+    private fun checkBoxUpdate() {
+        if (items == null) return
+        val focusedNames = model.focusedMethod?.map { it.name }
+        val selectedMethods = items.filter {
+            focusedNames?.contains(it.member.name) ?: false
+        }
+        if (selectedMethods.isEmpty()) {
+            checkMembers(items)
+        } else {
+            checkMembers(selectedMethods)
+        }
     }
 
     private fun initDefaultValues() {
