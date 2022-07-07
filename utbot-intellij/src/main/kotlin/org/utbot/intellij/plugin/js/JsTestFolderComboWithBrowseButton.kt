@@ -12,7 +12,6 @@ import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.ArrayUtil
 import org.utbot.common.PathUtil
 import org.utbot.framework.plugin.api.CodegenLanguage
-import org.utbot.intellij.plugin.ui.GenerateTestsModel
 import org.utbot.intellij.plugin.ui.utils.addDedicatedTestRoot
 import org.utbot.intellij.plugin.ui.utils.suitableTestSourceRoots
 import java.io.File
