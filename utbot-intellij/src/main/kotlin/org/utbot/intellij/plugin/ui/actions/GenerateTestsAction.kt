@@ -16,6 +16,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.util.classMembers.MemberInfo
 import com.intellij.testIntegration.TestIntegrationUtils
+import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.idea.core.getPackage
 import org.jetbrains.kotlin.idea.core.util.toPsiDirectory
 import org.jetbrains.kotlin.idea.core.util.toPsiFile
@@ -25,11 +26,11 @@ import java.util.*
 
 class GenerateTestsAction : AnAction() {
 
-    private fun getLanguage(e: AnActionEvent): String {
-        return e.getData(CommonDataKeys.PSI_FILE)?.language?.id ?: ""
+    private fun getLanguage(e: AnActionEvent): com.intellij.lang.Language? {
+        return e.getData(CommonDataKeys.PSI_FILE)?.language
     }
     override fun actionPerformed(e: AnActionEvent) {
-        if (getLanguage(e) == JsActionMethods.jsId) {
+        if (getLanguage(e) == JsActionMethods.jsLanguage) {
             JsActionMethods.actionPerformed(e)
             return
         }
@@ -39,7 +40,7 @@ class GenerateTestsAction : AnAction() {
     }
 
     override fun update(e: AnActionEvent) {
-        if (getLanguage(e) == JsActionMethods.jsId) {
+        if (getLanguage(e) == JsActionMethods.jsLanguage) {
             JsActionMethods.update(e)
             return
         }
