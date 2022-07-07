@@ -17,20 +17,25 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiClass
 import com.intellij.refactoring.util.classMembers.MemberInfo
 import org.jetbrains.kotlin.idea.core.getPackage
-import org.utbot.framework.util.ConflictTriggers
 
-data class GenerateTestsModel(
-    val project: Project,
-    val srcModule: Module,
-    val testModule: Module,
+class GenerateTestsModel(
+    project: Project,
+    srcModule: Module,
+    testModule: Module,
     val jdkVersion: JavaSdkVersion,
     var srcClasses: Set<PsiClass>,
     var selectedMethods: Set<MemberInfo>?,
-    var timeout:Long,
+    var timeout: Long,
     var generateWarningsForStaticMocking: Boolean = false,
     var fuzzingValue: Double = 0.05
+    var forceMockHappened: Boolean = false,
+    var forceStaticMockHappened: Boolean = false,
+    var hasTestFrameworkConflict: Boolean = false,
+) : BaseTestsModel(
+    project,
+    srcModule,
+    testModule
 ) {
-    var testSourceRoot: VirtualFile? = null
     var testPackageName: String? = null
     lateinit var testFramework: TestFramework
     lateinit var mockStrategy: MockStrategyApi
