@@ -1,14 +1,9 @@
 package org.utbot.intellij.plugin.js
 
-import com.intellij.lang.javascript.psi.JSElement
 import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiClass
-import com.intellij.refactoring.util.classMembers.MemberInfo
-import org.jetbrains.kotlin.idea.util.module
-import org.utbot.intellij.plugin.ui.GenerateTestsDialogWindow
 import org.utbot.intellij.plugin.ui.utils.testModule
 
 object JsDialogProcessor {
