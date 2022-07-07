@@ -5,15 +5,19 @@ import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.testIntegration.TestFramework
+import org.utbot.intellij.plugin.ui.utils.BaseTestsModel
 
-data class JsTestsModel(
-    val project: Project,
-    val srcModule: Module,
-    val testModule: Module,
+class JsTestsModel(
+    project: Project,
+    srcModule: Module,
+    testModule: Module,
     val fileMethods: Set<JSMemberInfo>?,
     val focusedMethod: Set<JSFunction>?,
+) : BaseTestsModel(
+    project,
+    srcModule,
+    testModule
 ) {
-    var testSourceRoot: VirtualFile? = null
-    // TODO testPackageName
-    // TODO testFramework
+    lateinit var testFramework: TestFramework
 }
