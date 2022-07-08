@@ -16,7 +16,6 @@ interface PsiElementHandler {
         fun makePsiElementHandler(file: PsiFile): PsiElementHandler =
             when (file) {
                 is KtFile -> KotlinPsiElementHandler()
-                is JSFile -> JsPsiElementHandler()
                 else -> JavaPsiElementHandler()
             }
     }

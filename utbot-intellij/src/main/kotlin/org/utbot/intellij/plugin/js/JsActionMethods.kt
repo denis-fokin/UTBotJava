@@ -48,7 +48,6 @@ object JsActionMethods {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return null
         val file = e.getData(CommonDataKeys.PSI_FILE) as? JSFile ?: return null
         val element = findPsiElement(file, editor) ?: return null
-        val kek = element.module
         val module = element.module ?: return null
         val focusedMethod = getContainingMethod(element)
         containingClass(element)?.let {
