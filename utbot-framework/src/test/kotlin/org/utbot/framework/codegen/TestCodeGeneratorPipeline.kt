@@ -265,7 +265,7 @@ class TestCodeGeneratorPipeline(private val testFrameworkConfiguration: TestFram
                     mockFramework = MockFramework.defaultItem,
                     mockStrategy = MockStrategyApi.defaultItem,
                     staticsMocking = StaticsMocking.defaultItem,
-                    parametrizedTestSource = ParametrizedTestSource.defaultItem,
+                    parametrizedTestSource = ParametrizedTestSource.PARAMETRIZE,
                     forceStaticMocking = ForceStaticMocking.defaultItem,
                 )
             )
