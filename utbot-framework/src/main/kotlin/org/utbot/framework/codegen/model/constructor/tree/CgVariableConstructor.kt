@@ -339,7 +339,7 @@ internal class CgVariableConstructor(val context: CgContext) :
     }
 
     private fun constructEnumConstant(model: UtEnumConstantModel, baseName: String?): CgVariable {
-        return newVar(model.classId, baseName) {
+        return newVar(model.classId, model, baseName) {
             CgEnumConstantAccess(model.classId, model.value.name)
         }
     }
