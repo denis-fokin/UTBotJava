@@ -118,6 +118,7 @@ abstract class CodeGenerationIntegrationTest(
                         )
                     }
 
+                    //TODO: pass parametrization setting as an argument
                     language.defaultCodegenPipeline.runClassesCodeGenerationTests(classStages)
                 } catch (e: RuntimeException) {
                     pipelineErrors.add(e.message)
