@@ -143,7 +143,7 @@ abstract class CodeGenerationIntegrationTest(
 
         private var allRunningTestClasses: List<ClassTestDescriptor> = mutableListOf()
 
-        private val languages = listOf(CodegenLanguage.JAVA, CodegenLanguage.KOTLIN)
+        private val languages = listOf(CodegenLanguage.JAVA)//listOf(CodegenLanguage.JAVA, CodegenLanguage.KOTLIN)
 
         data class CodeGenerationTestCases(
             val testClass: KClass<*>,
