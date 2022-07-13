@@ -15,4 +15,6 @@ class GoTestsModel(
     project,
     srcModule,
     testModule
-)
+) {
+    lateinit var selectedFunctionsOrMethods: Set<GoFunctionOrMethodDeclaration>
+}

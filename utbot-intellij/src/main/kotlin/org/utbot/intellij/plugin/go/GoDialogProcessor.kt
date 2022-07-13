@@ -24,10 +24,10 @@ object GoDialogProcessor {
         srcModule: Module,
         functionsOrMethod: Set<GoFunctionOrMethodDeclaration>,
         focusedFunctionOrMethod: GoFunctionOrMethodDeclaration?,
-    ): GoDialogWindow {
+    ): MyGoDialogWindow {
         val testModel = srcModule.testModule(project)
 
-        return GoDialogWindow(
+        return MyGoDialogWindow(
             GoTestsModel(
                 project,
                 srcModule,
