@@ -14,6 +14,12 @@
     <!--Optional dependency on org.jetbrains.android-->
     <depends optional="true" config-file="withAndroid.xml">org.jetbrains.android</depends>
 
+    <!--Optional dependency on org.jetbrains.plugins.go-->
+    <depends optional="true" config-file="withGo.xml">org.jetbrains.plugins.go</depends>
+
+    <!--Optional dependency on org.jetbrains.plugins.go-template-->
+    <depends optional="true" config-file="withGoTemplate.xml">org.jetbrains.plugins.go-template</depends>
+
     <actions>
         <action id="org.utbot.intellij.plugin.ui.actions.GenerateTestsAction"
                 class="org.utbot.intellij.plugin.ui.actions.GenerateTestsAction"
