@@ -24,8 +24,15 @@ object ConstantsModelProvider : ModelProvider {
                 )
                     .filterNotNull()
                     .forEach { m ->
-                        description.parametersMap.getOrElse(m.model.classId) { emptyList() }.forEach { index ->
-                            consumer.accept(index, m)
+                        //Temp option, will be removed
+                        if (description.returnType.name == "undefined") {
+                            description.parametersMap[description.parametersMap.keys.first()]!!.forEach { index ->
+                                consumer.accept(index, m)
+                            }
+                        } else {
+                            description.parametersMap.getOrElse(m.model.classId) { emptyList() }.forEach { index ->
+                                consumer.accept(index, m)
+                            }
                         }
                     }
         }

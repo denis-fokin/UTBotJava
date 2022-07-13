@@ -583,6 +583,46 @@ data class UtStaticMethodInstrumentation(
     val values: List<UtModel>
 ) : UtInstrumentation()
 
+
+
+
+data class JsUndefinedModel(
+    override val classId: ClassId
+): UtModel(classId) {
+    override fun toString() = "undefined"
+}
+
+data class JsPrimitiveModel(
+    val value: Any,
+) : UtModel(jsPrimitiveModelValueToClassId(value)) {
+    override fun toString() = value.toString()
+}
+private fun jsPrimitiveModelValueToClassId(value: Any) =
+    when(value) {
+        is Int -> Integer.TYPE.id
+        is Boolean -> java.lang.Boolean.TYPE.id
+        is Double -> java.lang.Double.TYPE.id
+        else -> value.javaClass.id
+    }
+
+//is Byte -> java.lang.Byte.TYPE.id
+//is Short -> java.lang.Short.TYPE.id
+//is Char -> Character.TYPE.id
+//is Int -> Integer.TYPE.id
+//is Long -> java.lang.Long.TYPE.id
+//is Float -> java.lang.Float.TYPE.id
+//is Double -> java.lang.Double.TYPE.id
+//is Boolean -> java.lang.Boolean.TYPE.id
+
+data class JsNullModel(
+    override val classId: ClassId
+) : UtModel(classId) {
+    override fun toString() = "null"
+}
+
+
+
+
 val SootClass.id: ClassId
     get() = ClassId(name)
 
