@@ -1,13 +1,9 @@
 package org.utbot.intellij.plugin.js
 
-import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.ui.JSMemberSelectionTable
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.psi.util.PsiUtil
 import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBUI
 import com.oracle.js.parser.ErrorManager
@@ -17,6 +13,9 @@ import com.oracle.js.parser.Source
 import com.oracle.js.parser.ir.FunctionNode
 import com.oracle.js.parser.ir.VarNode
 import org.graalvm.polyglot.Context
+import org.utbot.framework.plugin.api.JsPrimitiveModel
+import org.utbot.fuzzer.FuzzedValue
+import org.utbot.intellij.plugin.js.fuzzer.jsFuzzing
 import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
 import javax.swing.JComponent
 
@@ -51,13 +50,45 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
             }
         }
         updateMembersTable()
-        val k = getFunctionNode(model.focusedMethod!!.toList().first())
-        jsFuzzing(method = k)
         return panel
     }
 
-    private fun getFunctionNode(focusedMethod: JSFunction): FunctionNode {
-        val anekdot = "function " + (focusedMethod as PsiElement).text
+    override fun doOKAction() {
+        val selected = functionsTable.selectedMemberInfos
+        selected.forEach {
+            val funcNode = getFunctionNode(it)
+            val res = jsFuzzing(method = funcNode).toList()
+            runJs(res, funcNode, it.member.text)
+        }
+        super.doOKAction()
+    }
+
+    private fun runJs(fuzzedValues: List<List<FuzzedValue>>, method: FunctionNode, funcString: String) {
+        val context = Context.newBuilder("js").build()
+        fuzzedValues.forEach { values ->
+            val str = makeStringForRunJs(values, method, funcString)
+            val res = context.eval("js", str)
+        }
+    }
+
+    private fun makeStringForRunJs(fuzzedValue: List<FuzzedValue>, method: FunctionNode, funcString: String): String {
+        val callString = makeCallFunctionString(fuzzedValue, method)
+        return """function $funcString
+                  $callString""".trimIndent()
+    }
+
+    private fun makeCallFunctionString(fuzzedValue: List<FuzzedValue>, method: FunctionNode): String {
+        var callString = "${method.name}("
+        fuzzedValue.forEach { value ->
+            callString += "${(value.model as JsPrimitiveModel).value},"
+        }
+        callString = callString.dropLast(1)
+        callString += ')'
+        return callString
+    }
+
+    private fun getFunctionNode(focusedMethod: JSMemberInfo): FunctionNode {
+        val anekdot = "function " + focusedMethod.member.text
         Thread.currentThread().contextClassLoader = Context::class.java.classLoader
         val parser = Parser(
             ScriptEnvironment.builder().build(),

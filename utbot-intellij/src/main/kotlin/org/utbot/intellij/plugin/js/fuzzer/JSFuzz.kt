@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js
+package org.utbot.intellij.plugin.js.fuzzer
 
 import com.oracle.js.parser.ir.*
 import com.oracle.truffle.api.strings.TruffleString
@@ -9,7 +9,6 @@ import org.utbot.framework.plugin.api.util.doubleClassId
 import org.utbot.framework.plugin.api.util.intClassId
 import org.utbot.framework.plugin.api.util.longClassId
 import org.utbot.fuzzer.*
-import org.utbot.fuzzer.providers.ConstantsModelProvider
 
 fun getTreeConst(
     tree: Expression?,
@@ -74,20 +73,18 @@ fun getIfNodes(node: Node?, IfNodes: MutableList<IfNode> = mutableListOf()): Lis
 }
 
 
-class JsClassId(val jsName: String) : ClassId(jsName) {
+class JsClassId(private val jsName: String) : ClassId(jsName) {
     override val simpleName: String
         get() = jsName
 }
 
-val undefinedClassId = JsClassId("undefined")
-private var nextDefaultModelId = 1500_000_000
 
 fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: FunctionNode) {
     val execId = MethodId(
         JsClassId("debug"),
         method.name.toString(),
-        undefinedClassId,
-        method.parameters.toList().map { undefinedClassId }
+        jsUndefinedClassId,
+        method.parameters.toList().map { jsUndefinedClassId }
     )
 
     val allStatements = mutableListOf<IfNode>()
@@ -99,7 +96,7 @@ fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: 
         getTreeConst(it.test, FuzzedOp.NONE, allConstants)
     }
 
-    val modelProviderWithFallback = modelProvider(ModelProvider.of(ConstantsModelProvider))
+    val modelProviderWithFallback = modelProvider(ModelProvider.of(JsConstantsModelProvider, JsUndefinedModelProvider))
     val methodUnderTestDescription = FuzzedMethodDescription(execId, allConstants).apply {
         compilableName = method.name.toString()
         val names = method.parameters.map { it.name.toString() }
