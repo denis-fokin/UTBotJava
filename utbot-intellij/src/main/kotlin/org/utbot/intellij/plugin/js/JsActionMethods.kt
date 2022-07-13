@@ -15,6 +15,11 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.util.PsiTreeUtil
+import com.oracle.js.parser.ErrorManager
+import com.oracle.js.parser.Parser
+import com.oracle.js.parser.ScriptEnvironment
+import com.oracle.js.parser.Source
+import org.graalvm.polyglot.Context
 import org.jetbrains.kotlin.idea.util.projectStructure.module
 
 object JsActionMethods {

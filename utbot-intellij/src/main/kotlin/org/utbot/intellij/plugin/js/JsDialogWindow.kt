@@ -1,11 +1,22 @@
 package org.utbot.intellij.plugin.js
 
+import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.ui.JSMemberSelectionTable
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.util.PsiUtil
 import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBUI
+import com.oracle.js.parser.ErrorManager
+import com.oracle.js.parser.Parser
+import com.oracle.js.parser.ScriptEnvironment
+import com.oracle.js.parser.Source
+import com.oracle.js.parser.ir.FunctionNode
+import com.oracle.js.parser.ir.VarNode
+import org.graalvm.polyglot.Context
 import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
 import javax.swing.JComponent
 
@@ -40,7 +51,22 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
             }
         }
         updateMembersTable()
+        val k = getFunctionNode(model.focusedMethod!!.toList().first())
+        jsFuzzing(method = k)
         return panel
+    }
+
+    private fun getFunctionNode(focusedMethod: JSFunction): FunctionNode {
+        val anekdot = "function " + (focusedMethod as PsiElement).text
+        Thread.currentThread().contextClassLoader = Context::class.java.classLoader
+        val parser = Parser(
+            ScriptEnvironment.builder().build(),
+            Source.sourceFor("test", anekdot),
+            ErrorManager.ThrowErrorManager()
+        )
+        val functionNode = parser.parse()
+        val block = functionNode.body
+        return (block.statements[0] as VarNode).init as FunctionNode
     }
 
     private fun updateMembersTable() {
