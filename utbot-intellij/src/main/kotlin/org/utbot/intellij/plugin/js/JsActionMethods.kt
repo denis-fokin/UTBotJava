@@ -15,11 +15,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.util.PsiTreeUtil
-import com.oracle.js.parser.ErrorManager
-import com.oracle.js.parser.Parser
-import com.oracle.js.parser.ScriptEnvironment
-import com.oracle.js.parser.Source
-import org.graalvm.polyglot.Context
 import org.jetbrains.kotlin.idea.util.projectStructure.module
 
 object JsActionMethods {
@@ -94,16 +89,11 @@ object JsActionMethods {
         var strBuilder = "\n"
         val filteredMethods = methods.filterNot { method -> method.name == "constructor" }
         filteredMethods.forEach {
-            strBuilder += buildStringForMethod(it)
+            strBuilder += it.text
         }
         return "class askfajsghalwig {$strBuilder}"
     }
 
-    private fun buildStringForMethod(method: JSFunction): String {
-        val str = method.parameterVariables.map { it.name ?: error("No Js method name!") }
-            .fold("") {acc, s -> "$acc, $s" }
-        return "${method.name} (${str.drop(1)}) {}\n"
-    }
     /*
         Small hack: generating a string source code of an "impossible" class in order to
         generate a PsiFile with it, then extract ES6Class from it, then extract MemberInfos.
