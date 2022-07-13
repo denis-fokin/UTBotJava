@@ -2,47 +2,37 @@ package org.utbot.intellij.plugin.js
 
 import com.oracle.js.parser.ir.*
 import com.oracle.truffle.api.strings.TruffleString
-import org.utbot.engine.isMethod
 import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.MethodId
 import org.utbot.framework.plugin.api.util.booleanClassId
 import org.utbot.framework.plugin.api.util.doubleClassId
 import org.utbot.framework.plugin.api.util.intClassId
+import org.utbot.framework.plugin.api.util.longClassId
 import org.utbot.fuzzer.*
 import org.utbot.fuzzer.providers.ConstantsModelProvider
-import org.utbot.fuzzer.providers.PrimitivesModelProvider
 
-private val set = mutableSetOf<FuzzedConcreteValue>()
+fun getTreeConst(
+    tree: Expression?,
+    lastFuzzedOp: FuzzedOp = FuzzedOp.NONE,
+    fuzzedConcreteValues: MutableSet<FuzzedConcreteValue> = mutableSetOf()
+): Set<FuzzedConcreteValue> {
 
-
-fun getTreeConst(tree: Expression?, lastFuzzedOp: FuzzedOp = FuzzedOp.NONE): Set<FuzzedConcreteValue>? {
-
-
-    val regex = """>|<|>=|<=|==|!=""".toRegex()
-
-    if (tree == null) {
-        return null
-    }
-    val b = tree
+    val compOp = """>=|<=|>|<|==|!=""".toRegex()
+    val curOp = compOp.find(tree.toString())?.value
+    val fuzzedOp = FuzzedOp.values().find { curOp == it.sign } ?: FuzzedOp.NONE
     when (tree) {
         is JoinPredecessorExpression -> {
-            println((tree.expression as? BinaryNode).toString())
-            val currentOperation = regex.find((tree.expression as? BinaryNode).toString())?.value
-            var fuzzedOp = FuzzedOp.NONE
-            for (el in FuzzedOp.values()) {
-                if (currentOperation == el.sign)
-                    fuzzedOp = el
-            }
-            getTreeConst((tree.expression as? BinaryNode)?.lhs, fuzzedOp)
-            getTreeConst((tree.expression as? BinaryNode)?.rhs, fuzzedOp)
-        }
-        is IdentNode -> {
-            //TODO
+            getTreeConst((tree.expression as? BinaryNode)?.lhs, fuzzedOp, fuzzedConcreteValues)
+            getTreeConst(
+                (tree.expression as? BinaryNode)?.rhs,
+                fuzzedOp.reverseOrElse { FuzzedOp.NONE },
+                fuzzedConcreteValues
+            )
         }
         is LiteralNode<*> -> {
             when (tree.value) {
                 is TruffleString -> {
-                    set.add(
+                    fuzzedConcreteValues.add(
                         FuzzedConcreteValue(
                             ClassId("<string>"),
                             tree.value.toString(),
@@ -51,27 +41,40 @@ fun getTreeConst(tree: Expression?, lastFuzzedOp: FuzzedOp = FuzzedOp.NONE): Set
                     )
                 }
                 is Boolean -> {
-                    set.add(FuzzedConcreteValue(booleanClassId, tree.value, lastFuzzedOp))
+                    fuzzedConcreteValues.add(FuzzedConcreteValue(booleanClassId, tree.value, lastFuzzedOp))
                 }
                 is Integer -> {
-                    set.add(FuzzedConcreteValue(intClassId, tree.value, lastFuzzedOp))
+                    fuzzedConcreteValues.add(FuzzedConcreteValue(intClassId, tree.value, lastFuzzedOp))
+                }
+                is Long -> {
+                    fuzzedConcreteValues.add(FuzzedConcreteValue(longClassId, tree.value, lastFuzzedOp))
                 }
                 is Double -> {
-                    set.add(FuzzedConcreteValue(doubleClassId, tree.value, lastFuzzedOp))
+                    fuzzedConcreteValues.add(FuzzedConcreteValue(doubleClassId, tree.value, lastFuzzedOp))
                 }
             }
         }
-        else -> {
-            println((tree as BinaryNode).toString())
-            getTreeConst((tree as? BinaryNode)?.lhs)
-            getTreeConst((tree as? BinaryNode)?.rhs)
+        is BinaryNode -> {
+            getTreeConst((tree as? BinaryNode)?.lhs, fuzzedOp, fuzzedConcreteValues)
+            getTreeConst((tree as? BinaryNode)?.rhs, fuzzedOp.reverseOrElse { FuzzedOp.NONE }, fuzzedConcreteValues)
         }
     }
-    return set
+    return fuzzedConcreteValues
+}
+
+fun getIfNodes(node: Node?, IfNodes: MutableList<IfNode> = mutableListOf()): List<IfNode> {
+    when (node) {
+        is IfNode -> {
+            node.fail?.let { getIfNodes(node.fail.statements.first() as? IfNode, IfNodes) }
+            node.pass?.let { getIfNodes(node.pass.statements.first() as? IfNode, IfNodes) }
+            IfNodes.add(node)
+        }
+    }
+    return IfNodes
 }
 
 
-class JsClassId(val jsName: String): ClassId(jsName) {
+class JsClassId(val jsName: String) : ClassId(jsName) {
     override val simpleName: String
         get() = jsName
 }
@@ -86,19 +89,21 @@ fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: 
         undefinedClassId,
         method.parameters.toList().map { undefinedClassId }
     )
-    method.body.statements.forEach {
-        when(it) {
-            is IfNode -> {
-                getTreeConst(it.test as BinaryNode)
-            }
-        }
+
+    val allStatements = mutableListOf<IfNode>()
+    method.body.statements.forEach { statement ->
+        allStatements.addAll(getIfNodes(statement))
     }
+    val allConstants = mutableSetOf<FuzzedConcreteValue>()
+    allStatements.forEach {
+        getTreeConst(it.test, FuzzedOp.NONE, allConstants)
+    }
+
     val modelProviderWithFallback = modelProvider(ModelProvider.of(ConstantsModelProvider))
-    val methodUnderTestDescription = FuzzedMethodDescription(execId, set).apply {
+    val methodUnderTestDescription = FuzzedMethodDescription(execId, allConstants).apply {
         compilableName = method.name.toString()
-        val names = method.parameters.map {it.name.toString()}
+        val names = method.parameters.map { it.name.toString() }
         parameterNameMap = { index -> names.getOrNull(index) }
     }
-    val res = fuzz(methodUnderTestDescription, modelProviderWithFallback).toList()
-    val k = 1
+    fuzz(methodUnderTestDescription, modelProviderWithFallback).toList()
 }
