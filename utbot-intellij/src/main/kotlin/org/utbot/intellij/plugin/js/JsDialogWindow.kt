@@ -68,6 +68,7 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
         fuzzedValues.forEach { values ->
             val str = makeStringForRunJs(values, method, funcString)
             val res = context.eval("js", str)
+            val k = 1
         }
     }
 

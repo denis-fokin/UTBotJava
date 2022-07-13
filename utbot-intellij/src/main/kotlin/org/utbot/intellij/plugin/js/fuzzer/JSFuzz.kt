@@ -79,7 +79,7 @@ class JsClassId(private val jsName: String) : ClassId(jsName) {
 }
 
 
-fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: FunctionNode) {
+fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: FunctionNode): Sequence<List<FuzzedValue>> {
     val execId = MethodId(
         JsClassId("debug"),
         method.name.toString(),
@@ -102,5 +102,5 @@ fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: 
         val names = method.parameters.map { it.name.toString() }
         parameterNameMap = { index -> names.getOrNull(index) }
     }
-    fuzz(methodUnderTestDescription, modelProviderWithFallback).toList()
+    return fuzz(methodUnderTestDescription, modelProviderWithFallback)
 }
