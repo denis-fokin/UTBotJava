@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.idea.util.projectStructure.module
 object JsActionMethods {
 
     private const val jsId = "ECMAScript 6"
-    val jsLanguage : Language = Language.findLanguageByID(jsId) ?: error("JavaScript language wasn't found")
+    val jsLanguage: Language = Language.findLanguageByID(jsId) ?: error("JavaScript language wasn't found")
 
     private data class PsiTargets(
         val methods: Set<JSMemberInfo>,

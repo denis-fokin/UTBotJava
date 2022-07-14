@@ -4,7 +4,6 @@ import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testIntegration.TestFramework
 import org.utbot.intellij.plugin.ui.utils.BaseTestsModel
 

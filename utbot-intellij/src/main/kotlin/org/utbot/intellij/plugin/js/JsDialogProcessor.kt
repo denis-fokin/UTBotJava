@@ -15,7 +15,7 @@ object JsDialogProcessor {
         focusedMethod: JSFunction?,
     ) {
         val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
-        if(!dialogProcessor.showAndGet()) return
+        if (!dialogProcessor.showAndGet()) return
 
         createTests(project, dialogProcessor.model)
     }
