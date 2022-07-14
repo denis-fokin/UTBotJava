@@ -20,7 +20,7 @@ import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
 import javax.swing.JComponent
 
 
-class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
+class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
 
     private val items = model.fileMethods
 
@@ -92,11 +92,11 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
     }
 
     private fun getFunctionNode(focusedMethod: JSMemberInfo): FunctionNode {
-        val anekdot = "function " + focusedMethod.member.text
+        val funFixString = "function " + focusedMethod.member.text
         Thread.currentThread().contextClassLoader = Context::class.java.classLoader
         val parser = Parser(
             ScriptEnvironment.builder().build(),
-            Source.sourceFor("test", anekdot),
+            Source.sourceFor("test", funFixString),
             ErrorManager.ThrowErrorManager()
         )
         val functionNode = parser.parse()

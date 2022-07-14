@@ -16,7 +16,8 @@ object JsConstantsModelProvider : ModelProvider {
         description.concreteValues
             .asSequence()
             .filter { (classId, _) ->
-                (classId.toJsClassId()).isPrimitive }
+                (classId.toJsClassId()).isPrimitive
+            }
             .forEach { (_, value, op) ->
                 sequenceOf(
                     JsPrimitiveModel(value).fuzzed { summary = "%var% = $value" },
@@ -37,7 +38,7 @@ object JsConstantsModelProvider : ModelProvider {
     private fun modifyValue(value: Any, op: FuzzedOp): FuzzedValue? {
         if (!op.isComparisonOp()) return null
         val multiplier = if (op == FuzzedOp.LT || op == FuzzedOp.GE) -1 else 1
-        return when(value) {
+        return when (value) {
             is Boolean -> value.not()
             is Byte -> value + multiplier.toByte()
             is Char -> (value.toInt() + multiplier).toChar()
@@ -47,10 +48,14 @@ object JsConstantsModelProvider : ModelProvider {
             is Float -> value + multiplier.toDouble()
             is Double -> value + multiplier.toDouble()
             else -> null
-        }?.let { JsPrimitiveModel(it).fuzzed { summary = "%var% ${
-            (if (op == FuzzedOp.EQ || op == FuzzedOp.LE || op == FuzzedOp.GE) {
-                op.reverseOrNull() ?: error("cannot find reverse operation for $op")
-            } else op).sign
-        } $value" } }
+        }?.let {
+            JsPrimitiveModel(it).fuzzed {
+                summary = "%var% ${
+                    (if (op == FuzzedOp.EQ || op == FuzzedOp.LE || op == FuzzedOp.GE) {
+                        op.reverseOrNull() ?: error("cannot find reverse operation for $op")
+                    } else op).sign
+                } $value"
+            }
+        }
     }
 }

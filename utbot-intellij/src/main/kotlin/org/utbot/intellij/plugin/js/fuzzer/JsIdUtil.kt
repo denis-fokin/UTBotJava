@@ -18,7 +18,7 @@ val jsPrimitives = setOf(
 )
 
 fun ClassId.toJsClassId() =
-    when(this) {
+    when (this) {
         intClassId -> jsIntClassId
         booleanClassId -> jsBooleanClassId
         doubleClassId -> jsDoubleClassId

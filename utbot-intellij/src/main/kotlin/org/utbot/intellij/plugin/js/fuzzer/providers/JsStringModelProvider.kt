@@ -1,13 +1,10 @@
 package org.utbot.intellij.plugin.js.fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
-import org.utbot.framework.plugin.api.UtPrimitiveModel
-import org.utbot.framework.plugin.api.util.stringClassId
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.ModelProvider
 import org.utbot.fuzzer.providers.StringConstantModelProvider
-import org.utbot.fuzzer.providers.StringConstantModelProvider.fuzzed
 import org.utbot.intellij.plugin.js.fuzzer.jsStringClassId
 import org.utbot.intellij.plugin.js.fuzzer.jsUndefinedClassId
 import org.utbot.intellij.plugin.js.fuzzer.toJsClassId
@@ -17,9 +14,6 @@ import kotlin.random.Random
 object JsStringModelProvider : ModelProvider {
     override fun generate(description: FuzzedMethodDescription, consumer: BiConsumer<Int, FuzzedValue>) {
         val random = Random(72923L)
-        val blyat = description.concreteValues
-            .asSequence()
-            .filter { (classId, _) -> classId.toJsClassId() == jsStringClassId }.toList()
         description.concreteValues
             .asSequence()
             .filter { (classId, _) -> classId.toJsClassId() == jsStringClassId }
