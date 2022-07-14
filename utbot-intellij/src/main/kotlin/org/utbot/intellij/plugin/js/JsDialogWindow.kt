@@ -81,7 +81,10 @@ class JsDialogWindow(val model: JsTestsModel): DialogWrapper(model.project) {
     private fun makeCallFunctionString(fuzzedValue: List<FuzzedValue>, method: FunctionNode): String {
         var callString = "${method.name}("
         fuzzedValue.forEach { value ->
-            callString += "${(value.model as JsPrimitiveModel).value},"
+            when ((value.model as JsPrimitiveModel).value) {
+                is String -> callString += "\"${(value.model as JsPrimitiveModel).value}\","
+                else -> callString += "${(value.model as JsPrimitiveModel).value},"
+            }
         }
         callString = callString.dropLast(1)
         callString += ')'

@@ -1,10 +1,13 @@
-package org.utbot.intellij.plugin.js.fuzzer
+package org.utbot.intellij.plugin.js.fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedOp
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.ModelProvider
+import org.utbot.intellij.plugin.js.fuzzer.isPrimitive
+import org.utbot.intellij.plugin.js.fuzzer.jsUndefinedClassId
+import org.utbot.intellij.plugin.js.fuzzer.toJsClassId
 import java.util.function.BiConsumer
 
 object JsConstantsModelProvider : ModelProvider {

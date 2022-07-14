@@ -28,13 +28,13 @@ object StringConstantModelProvider : ModelProvider {
             }
     }
 
-    private fun mutate(random: Random, value: String?, op: FuzzedOp): String? {
+    fun mutate(random: Random, value: String?, op: FuzzedOp): String? {
         if (value == null || value.isEmpty() || op != FuzzedOp.CH) return null
         val indexOfMutation = random.nextInt(value.length)
         return value.replaceRange(indexOfMutation, indexOfMutation + 1, SingleCharacterSequence(value[indexOfMutation] - random.nextInt(1, 128)))
     }
 
-    private class SingleCharacterSequence(private val character: Char) : CharSequence {
+    class SingleCharacterSequence(private val character: Char) : CharSequence {
         override val length: Int
             get() = 1
 
