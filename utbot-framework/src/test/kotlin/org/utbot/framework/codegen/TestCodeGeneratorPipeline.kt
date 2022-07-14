@@ -71,6 +71,7 @@ class TestCodeGeneratorPipeline(private val testFrameworkConfiguration: TestFram
             val testSets = data as List<UtMethodTestSet>
 
             val codegenLanguage = testFrameworkConfiguration.codegenLanguage
+            val parametrizedTestSource = testFrameworkConfiguration.parametrizedTestSource
 
             val testClass = callToCodeGenerator(testSets, classUnderTest)
 
@@ -79,14 +80,27 @@ class TestCodeGeneratorPipeline(private val testFrameworkConfiguration: TestFram
                 .lines()
                 .count {
                     val trimmedLine = it.trimStart()
-                    if (codegenLanguage == CodegenLanguage.JAVA) {
-                        trimmedLine.startsWith("public void")
-                    } else {
-                        trimmedLine.startsWith("fun ")
+                    val prefix = when (codegenLanguage) {
+                        CodegenLanguage.JAVA ->
+                            when (parametrizedTestSource) {
+                                ParametrizedTestSource.DO_NOT_PARAMETRIZE -> "public void "
+                                ParametrizedTestSource.PARAMETRIZE -> "public void parameterizedTestsFor"
+                            }
+
+                        CodegenLanguage.KOTLIN ->
+                            when (parametrizedTestSource) {
+                                ParametrizedTestSource.DO_NOT_PARAMETRIZE -> "fun "
+                                ParametrizedTestSource.PARAMETRIZE -> "fun parameterizedTestsFor"
+                            }
                     }
+                    trimmedLine.startsWith(prefix)
                 }
+
             // expected number of the tests in the generated testClass
-            val expectedNumberOfGeneratedMethods = testSets.sumOf { it.executions.size }
+            val expectedNumberOfGeneratedMethods = when (parametrizedTestSource) {
+                ParametrizedTestSource.DO_NOT_PARAMETRIZE -> testSets.sumOf { it.executions.size }
+                ParametrizedTestSource.PARAMETRIZE -> testSets.size
+            }
 
             // check for error in the generated file
             runCatching {
