@@ -42,7 +42,6 @@ object GoActionMethods {
     }
 
     private fun getPsiTargets(e: AnActionEvent): PsiTargets? {
-        println(e.project)
         e.project ?: return null
 
         //The action is being called from editor or return (TODO)
