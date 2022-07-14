@@ -62,7 +62,7 @@ internal class CgTestClassConstructor(val context: CgContext) :
 
                     dataProvidersAndUtilMethodsRegion += CgStaticsRegion(
                         "Data providers and utils methods",
-                        cgDataProviderMethods + createUtilMethods()
+                        cgDataProviderMethods
                     )
                 }
                 // It is important that annotations, superclass and interfaces assignment is run after

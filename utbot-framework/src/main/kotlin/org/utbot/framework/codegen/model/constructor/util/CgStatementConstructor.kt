@@ -106,7 +106,7 @@ interface CgStatementConstructor {
     infix fun CgExpression.`=`(value: Any?)
     infix fun CgExpression.and(other: CgExpression): CgLogicalAnd
     infix fun CgExpression.or(other: CgExpression): CgLogicalOr
-    fun ifStatement(condition: CgExpression, trueBranch: () -> Unit): CgIfStatement
+    fun ifStatement(condition: CgExpression, trueBranch: () -> Unit, falseBranch: (() -> Unit)? = null): CgIfStatement
     fun forLoop(init: CgForLoopBuilder.() -> Unit)
     fun whileLoop(condition: CgExpression, statements: () -> Unit)
     fun doWhileLoop(condition: CgExpression, statements: () -> Unit)
@@ -250,8 +250,10 @@ internal class CgStatementConstructorImpl(context: CgContext) :
     override fun CgExpression.or(other: CgExpression): CgLogicalOr =
         CgLogicalOr(this, other)
 
-    override fun ifStatement(condition: CgExpression, trueBranch: () -> Unit): CgIfStatement {
-        return CgIfStatement(condition, block(trueBranch)).also {
+    override fun ifStatement(condition: CgExpression, trueBranch: () -> Unit, falseBranch: (() -> Unit)?): CgIfStatement {
+        val trueBranchBlock = block(trueBranch)
+        val falseBranchBlock = falseBranch?.let { block(it) }
+        return CgIfStatement(condition, trueBranchBlock, falseBranchBlock).also {
             currentBlock += it
         }
     }
@@ -416,7 +418,7 @@ internal class CgStatementConstructorImpl(context: CgContext) :
                 Class::class.id[forName](enumClass.name)
             }
 
-            ExpressionWithType(objectClassId, testClassThisInstance[getEnumConstantByName](enumClassVariable, constant))
+            ExpressionWithType(objectClassId, utilsClassId[getEnumConstantByName](enumClassVariable, constant))
         }
     }
 
@@ -427,7 +429,7 @@ internal class CgStatementConstructorImpl(context: CgContext) :
         } else {
             ExpressionWithType(
                 objectArrayClassId,
-                testClassThisInstance[createArray](allocation.elementType.name, allocation.size)
+                utilsClassId[createArray](allocation.elementType.name, allocation.size)
             )
         }
     }
@@ -479,7 +481,7 @@ internal class CgStatementConstructorImpl(context: CgContext) :
             }
             expression.type isNotSubtypeOf baseType && !typeAccessible -> {
                 type = if (expression.type.isArray) objectArrayClassId else objectClassId
-                expr = if (expression is CgMethodCall && expression.executableId.isUtil) {
+                expr = if (expression is CgMethodCall && isUtil(expression.executableId)) {
                     CgErrorWrapper("${expression.executableId.name} failed", expression)
                 } else {
                     expression

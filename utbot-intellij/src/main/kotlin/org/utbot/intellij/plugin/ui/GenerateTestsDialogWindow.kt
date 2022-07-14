@@ -129,6 +129,7 @@ import javax.swing.JComponent
 import javax.swing.JList
 import javax.swing.JPanel
 import kotlin.streams.toList
+import org.utbot.intellij.plugin.ui.utils.findCodegenUtilsLibrary
 
 private const val RECENTS_KEY = "org.utbot.recents"
 
@@ -186,6 +187,8 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
     init {
         title = "Generate tests with UtBot"
         setResizable(false)
+
+        model.codegenUtilsLibraryInstalled = findCodegenUtilsLibrary(model.project, model.testModule) != null
 
         TestFramework.allItems.forEach {
             it.isInstalled = findFrameworkLibrary(model.project, model.testModule, it) != null

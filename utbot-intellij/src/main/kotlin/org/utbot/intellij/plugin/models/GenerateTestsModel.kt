@@ -38,6 +38,7 @@ data class GenerateTestsModel(
     lateinit var staticsMocking: StaticsMocking
     lateinit var parametrizedTestSource: ParametrizedTestSource
     lateinit var codegenLanguage: CodegenLanguage
+    var codegenUtilsLibraryInstalled: Boolean = false
     lateinit var runtimeExceptionTestsBehaviour: RuntimeExceptionTestsBehaviour
     lateinit var hangingTestsTimeout: HangingTestsTimeout
     lateinit var forceStaticMocking: ForceStaticMocking

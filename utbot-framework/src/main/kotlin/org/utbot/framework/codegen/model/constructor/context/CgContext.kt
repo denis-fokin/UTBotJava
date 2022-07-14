@@ -7,21 +7,6 @@ import org.utbot.framework.codegen.ParametrizedTestSource
 import org.utbot.framework.codegen.RuntimeExceptionTestsBehaviour
 import org.utbot.framework.codegen.StaticsMocking
 import org.utbot.framework.codegen.TestFramework
-import org.utbot.framework.codegen.model.constructor.builtin.arraysDeepEqualsMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.createArrayMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.createInstanceMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.deepEqualsMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.getArrayLengthMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.getEnumConstantByNameMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.getFieldValueMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.getStaticFieldValueMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.getUnsafeInstanceMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.hasCustomEqualsMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.iterablesDeepEqualsMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.mapsDeepEqualsMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.possibleUtilMethodIds
-import org.utbot.framework.codegen.model.constructor.builtin.setFieldMethodId
-import org.utbot.framework.codegen.model.constructor.builtin.setStaticFieldMethodId
 import org.utbot.framework.codegen.model.constructor.tree.Block
 import org.utbot.framework.codegen.model.constructor.util.EnvironmentFieldStateCache
 import org.utbot.framework.codegen.model.constructor.util.importIfNeeded
@@ -53,7 +38,9 @@ import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
-import org.utbot.framework.codegen.model.constructor.builtin.streamsDeepEqualsMethodId
+import org.utbot.framework.codegen.model.constructor.builtin.LibraryUtilMethodProvider
+import org.utbot.framework.codegen.model.constructor.builtin.TestClassUtilMethodProvider
+import org.utbot.framework.codegen.model.constructor.builtin.UtilMethodProvider
 import org.utbot.framework.codegen.model.tree.CgParameterKind
 import org.utbot.framework.plugin.api.util.executableId
 import org.utbot.framework.plugin.api.util.id
@@ -82,6 +69,15 @@ internal interface CgContextOwner {
 
     // test class currently being generated
     val currentTestClass: ClassId
+
+    // Flag indicating if there is a dependency on UtBot codegen utils library in the user's project.
+    // The sources of this library can be found in the module utbot-codegen-utils.
+    // If the library is in the dependencies, code generation will use util methods from it.
+    // Otherwise, util methods will be generated in the test class directly.
+    val codegenUtilsLibraryUsed: Boolean
+
+    // provider of util methods used for the test class currently being generated
+    val currentUtilMethodProvider: UtilMethodProvider
 
     // current executable under test
     var currentExecutable: ExecutableId?
@@ -320,66 +316,69 @@ internal interface CgContextOwner {
     }
 
     /**
-     * Check whether a method is an util method of the current class
+     * [ClassId] of a class that contains util methods.
+     * For example, it can be the current test class, or it can be a `UtUtils` class from module `utbot-codegen-utils`.
+     * The latter is used when our codegen utils library is included in the user's project dependencies.
      */
-    val MethodId.isUtil: Boolean
-        get() = this in currentTestClass.possibleUtilMethodIds
+    val utilsClassId: ClassId
+        get() = currentUtilMethodProvider.utilClassId
 
     /**
      * Checks is it our util reflection field getter method.
      * When this method is used with type cast in Kotlin, this type cast have to be safety
      */
     val MethodId.isGetFieldUtilMethod: Boolean
-        get() = isUtil && (name == getFieldValue.name || name == getStaticFieldValue.name)
+        get() = this == currentUtilMethodProvider.getFieldValueMethodId
+                || this == currentUtilMethodProvider.getStaticFieldValueMethodId
 
     val testClassThisInstance: CgThisInstance
 
     // util methods of current test class
 
     val getUnsafeInstance: MethodId
-        get() = currentTestClass.getUnsafeInstanceMethodId
+        get() = currentUtilMethodProvider.getUnsafeInstanceMethodId
 
     val createInstance: MethodId
-        get() = currentTestClass.createInstanceMethodId
+        get() = currentUtilMethodProvider.createInstanceMethodId
 
     val createArray: MethodId
-        get() = currentTestClass.createArrayMethodId
+        get() = currentUtilMethodProvider.createArrayMethodId
 
     val setField: MethodId
-        get() = currentTestClass.setFieldMethodId
+        get() = currentUtilMethodProvider.setFieldMethodId
 
     val setStaticField: MethodId
-        get() = currentTestClass.setStaticFieldMethodId
+        get() = currentUtilMethodProvider.setStaticFieldMethodId
 
     val getFieldValue: MethodId
-        get() = currentTestClass.getFieldValueMethodId
+        get() = currentUtilMethodProvider.getFieldValueMethodId
 
     val getStaticFieldValue: MethodId
-        get() = currentTestClass.getStaticFieldValueMethodId
+        get() = currentUtilMethodProvider.getStaticFieldValueMethodId
 
     val getEnumConstantByName: MethodId
-        get() = currentTestClass.getEnumConstantByNameMethodId
+        get() = currentUtilMethodProvider.getEnumConstantByNameMethodId
 
     val deepEquals: MethodId
-        get() = currentTestClass.deepEqualsMethodId
+        get() = currentUtilMethodProvider.deepEqualsMethodId
 
     val arraysDeepEquals: MethodId
-        get() = currentTestClass.arraysDeepEqualsMethodId
+        get() = currentUtilMethodProvider.arraysDeepEqualsMethodId
 
     val iterablesDeepEquals: MethodId
-        get() = currentTestClass.iterablesDeepEqualsMethodId
+        get() = currentUtilMethodProvider.iterablesDeepEqualsMethodId
 
     val streamsDeepEquals: MethodId
-        get() = currentTestClass.streamsDeepEqualsMethodId
+        get() = currentUtilMethodProvider.streamsDeepEqualsMethodId
 
     val mapsDeepEquals: MethodId
-        get() = currentTestClass.mapsDeepEqualsMethodId
+        get() = currentUtilMethodProvider.mapsDeepEqualsMethodId
 
     val hasCustomEquals: MethodId
-        get() = currentTestClass.hasCustomEqualsMethodId
+        get() = currentUtilMethodProvider.hasCustomEqualsMethodId
 
     val getArrayLength: MethodId
-        get() = currentTestClass.getArrayLengthMethodId
+        get() = currentUtilMethodProvider.getArrayLengthMethodId
 }
 
 /**
@@ -387,6 +386,7 @@ internal interface CgContextOwner {
  */
 internal data class CgContext(
     override val classUnderTest: ClassId,
+    override val codegenUtilsLibraryUsed: Boolean,
     override var currentExecutable: ExecutableId? = null,
     override val collectedTestClassInterfaces: MutableSet<ClassId> = mutableSetOf(),
     override val collectedTestClassAnnotations: MutableSet<CgAnnotation> = mutableSetOf(),
@@ -436,6 +436,13 @@ internal data class CgContext(
             canonicalName = name,
             simpleName = simpleName
         )
+    }
+
+    override val currentUtilMethodProvider: UtilMethodProvider by lazy {
+        when {
+            codegenUtilsLibraryUsed -> LibraryUtilMethodProvider
+            else -> TestClassUtilMethodProvider(currentTestClass)
+        }
     }
 
     override var testClassSuperclass: ClassId? = null

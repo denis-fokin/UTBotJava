@@ -268,6 +268,7 @@ object CodeGenerationController {
 
         val codeGenerator = CodeGenerator(
                 classUnderTest = classUnderTest.java,
+                codegenUtilsLibraryUsed = model.codegenUtilsLibraryInstalled,
                 params = params.toMutableMap(),
                 testFramework = testFramework,
                 mockFramework = mockito,

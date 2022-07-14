@@ -18,7 +18,6 @@ import org.utbot.framework.codegen.model.tree.CgExpression
 import org.utbot.framework.codegen.model.tree.CgFieldAccess
 import org.utbot.framework.codegen.model.tree.CgGetJavaClass
 import org.utbot.framework.codegen.model.tree.CgLiteral
-import org.utbot.framework.codegen.model.tree.CgNotNullAssertion
 import org.utbot.framework.codegen.model.tree.CgStaticFieldAccess
 import org.utbot.framework.codegen.model.tree.CgValue
 import org.utbot.framework.codegen.model.tree.CgVariable
@@ -118,7 +117,7 @@ internal class CgVariableConstructor(val context: CgContext) :
         val obj = if (model.isMock) {
             mockFrameworkManager.createMockFor(model, baseName)
         } else {
-            newVar(model.classId, baseName) { testClassThisInstance[createInstance](model.classId.name) }
+            newVar(model.classId, baseName) { utilsClassId[createInstance](model.classId.name) }
         }
 
         valueByModelId[model.id] = obj
@@ -146,7 +145,7 @@ internal class CgVariableConstructor(val context: CgContext) :
                 fieldAccess `=` variableForField
             } else {
                 // composite models must not have info about static fields, hence only non-static fields are set here
-                +testClassThisInstance[setField](obj, fieldId.name, variableForField)
+                +utilsClassId[setField](obj, fieldId.name, variableForField)
             }
         }
         return obj
