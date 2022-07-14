@@ -14,6 +14,7 @@ import org.utbot.framework.codegen.model.tree.CgCommentedAnnotation
 import org.utbot.framework.codegen.model.tree.CgComparison
 import org.utbot.framework.codegen.model.tree.CgConstructorCall
 import org.utbot.framework.codegen.model.tree.CgContinueStatement
+import org.utbot.framework.codegen.model.tree.CgCustomMethod
 import org.utbot.framework.codegen.model.tree.CgDeclaration
 import org.utbot.framework.codegen.model.tree.CgDecrement
 import org.utbot.framework.codegen.model.tree.CgDoWhileLoop
@@ -100,6 +101,7 @@ interface CgVisitor<R> {
     // Methods
     fun visit(element: CgMethod): R
     fun visit(element: CgTestMethod): R
+    fun visit(element: CgCustomMethod): R
     fun visit(element: CgErrorTestMethod): R
     fun visit(element: CgParameterizedTestDataProviderMethod): R
 

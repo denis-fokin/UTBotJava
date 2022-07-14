@@ -217,16 +217,26 @@ internal fun CgContextOwner.importIfNeeded(method: MethodId) {
 /**
  * Casts [expression] to [targetType].
  *
+ * If [targetType] is anonymous, then we cannot use it in type cast,
+ * because anonymous classes cannot be accessed in the source code.
+ * So, in this case we find the supertype of anonymous class and use it as the [targetType] instead.
+ *
  * @param isSafetyCast shows if we should render "as?" instead of "as" in Kotlin
  */
 internal fun CgContextOwner.typeCast(
     targetType: ClassId,
     expression: CgExpression,
     isSafetyCast: Boolean = false
-): CgTypeCast {
-    if (targetType.simpleName.isEmpty()) {
-        error("Cannot cast an expression to the anonymous type $targetType")
+//): CgTypeCast {
+): CgExpression {
+    @Suppress("NAME_SHADOWING")
+    val targetType = when {
+        targetType.isAnonymous -> targetType.supertypeOfAnonymousClass
+        else -> targetType
     }
+//    if (targetType.simpleName.isEmpty()) {
+//        error("Cannot cast an expression to the anonymous type $targetType")
+//    }
     importIfNeeded(targetType)
     return CgTypeCast(targetType, expression, isSafetyCast)
 }

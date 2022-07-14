@@ -197,6 +197,11 @@ private val isAnonymousRegex = ".*\\$\\d+$".toRegex()
 val SootClass.isAnonymous
     get() = name matches isAnonymousRegex
 
+private val isLambdaRegex = ".*(\\$)lambda_.*".toRegex()
+
+val SootClass.isLambda: Boolean
+    get() = name matches isLambdaRegex
+
 val Type.numDimensions get() = if (this is ArrayType) numDimensions else 0
 
 /**

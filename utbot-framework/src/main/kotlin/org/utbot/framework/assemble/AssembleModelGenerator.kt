@@ -106,7 +106,9 @@ class AssembleModelGenerator(private val methodUnderTest: UtMethod<*>) {
         }
 
         return IdentityHashMap<UtModel, UtModel>().apply {
-            models.forEach { getOrPut(it) { assembleModel(it) } }
+            models
+                .filterNot { it.classId.isAnonymous } // we cannot create an assemble model for an anonymous class instance
+                .forEach { getOrPut(it) { assembleModel(it) } }
         }
     }
 
@@ -227,6 +229,7 @@ class AssembleModelGenerator(private val methodUnderTest: UtMethod<*>) {
         }
 
         try {
+            // TODO: we can't use simpleName for anonymous classes, because it's empty
             val modelName = nextModelName(compositeModel.classId.jClass.simpleName.decapitalize())
 
             val instantiationChain = mutableListOf<UtStatementModel>()
