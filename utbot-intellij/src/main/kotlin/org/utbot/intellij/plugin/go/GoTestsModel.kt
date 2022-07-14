@@ -3,7 +3,7 @@ package org.utbot.intellij.plugin.go
 import com.goide.psi.GoFunctionOrMethodDeclaration
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import org.utbot.intellij.plugin.ui.utils.BaseTestsModel
+import org.utbot.intellij.plugin.models.BaseTestsModel
 
 class GoTestsModel(
     project: Project,
