@@ -39,7 +39,9 @@ object GoDialogProcessor {
     }
 
     private fun createTests(project: Project, model: GoTestsModel) {
-        //TODO
+        // TODO
+        println("Generate tests for:")
+        model.selectedFunctionsOrMethods.forEach { println("${it.name}") }
     }
 
 }
