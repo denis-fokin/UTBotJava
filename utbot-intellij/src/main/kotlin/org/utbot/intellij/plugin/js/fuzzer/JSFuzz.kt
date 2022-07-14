@@ -4,11 +4,11 @@ import com.oracle.js.parser.ir.*
 import com.oracle.truffle.api.strings.TruffleString
 import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.MethodId
-import org.utbot.framework.plugin.api.util.booleanClassId
-import org.utbot.framework.plugin.api.util.doubleClassId
-import org.utbot.framework.plugin.api.util.intClassId
-import org.utbot.framework.plugin.api.util.longClassId
+import org.utbot.framework.plugin.api.util.*
 import org.utbot.fuzzer.*
+import org.utbot.intellij.plugin.js.fuzzer.providers.JsConstantsModelProvider
+import org.utbot.intellij.plugin.js.fuzzer.providers.JsStringModelProvider
+import org.utbot.intellij.plugin.js.fuzzer.providers.JsUndefinedModelProvider
 
 fun getTreeConst(
     tree: Expression?,
@@ -96,7 +96,11 @@ fun jsFuzzing(modelProvider: (ModelProvider) -> ModelProvider = { it }, method: 
         getTreeConst(it.test, FuzzedOp.NONE, allConstants)
     }
 
-    val modelProviderWithFallback = modelProvider(ModelProvider.of(JsConstantsModelProvider, JsUndefinedModelProvider))
+    val modelProviderWithFallback = modelProvider(ModelProvider.of(
+        JsConstantsModelProvider,
+        JsUndefinedModelProvider,
+        JsStringModelProvider,
+    ))
     val methodUnderTestDescription = FuzzedMethodDescription(execId, allConstants).apply {
         compilableName = method.name.toString()
         val names = method.parameters.map { it.name.toString() }
