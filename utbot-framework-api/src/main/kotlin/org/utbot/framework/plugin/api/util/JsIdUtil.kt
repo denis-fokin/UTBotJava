@@ -1,7 +1,7 @@
-package org.utbot.intellij.plugin.js.fuzzer
+package org.utbot.framework.plugin.api.util
 
 import org.utbot.framework.plugin.api.ClassId
-import org.utbot.framework.plugin.api.util.*
+import org.utbot.framework.plugin.api.JsClassId
 
 val jsUndefinedClassId = JsClassId("undefined")
 val jsIntClassId = JsClassId("int")

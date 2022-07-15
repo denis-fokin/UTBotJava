@@ -33,6 +33,7 @@ import org.utbot.framework.plugin.api.util.primitiveTypeJvmNameOrNull
 import org.utbot.framework.plugin.api.util.shortClassId
 import org.utbot.framework.plugin.api.util.toReferenceTypeBytecodeSignature
 import org.utbot.framework.plugin.api.util.voidClassId
+import org.utbot.framework.plugin.api.util.toJsClassId
 import soot.ArrayType
 import soot.BooleanType
 import soot.ByteType
@@ -562,26 +563,29 @@ data class UtStaticMethodInstrumentation(
 ) : UtInstrumentation()
 
 
+class JsClassId(private val jsName: String) : ClassId(jsName) {
+    override val simpleName: String
+        get() = jsName
+}
 
 
-data class JsUndefinedModel(
-    override val classId: ClassId
-): UtModel(classId) {
+open class JsUtModel(
+    override val classId: JsClassId
+): UtModel(classId)
+
+class JsUndefinedModel(
+    classId: JsClassId
+): JsUtModel(classId) {
     override fun toString() = "undefined"
 }
 
 data class JsPrimitiveModel(
     val value: Any,
-) : UtModel(jsPrimitiveModelValueToClassId(value)) {
+) : JsUtModel(jsPrimitiveModelValueToClassId(value)) {
     override fun toString() = value.toString()
 }
 private fun jsPrimitiveModelValueToClassId(value: Any) =
-    when(value) {
-        is Int -> Integer.TYPE.id
-        is Boolean -> java.lang.Boolean.TYPE.id
-        is Double -> java.lang.Double.TYPE.id
-        else -> value.javaClass.id
-    }
+    primitiveModelValueToClassId(value).toJsClassId()
 
 //is Byte -> java.lang.Byte.TYPE.id
 //is Short -> java.lang.Short.TYPE.id
@@ -592,9 +596,9 @@ private fun jsPrimitiveModelValueToClassId(value: Any) =
 //is Double -> java.lang.Double.TYPE.id
 //is Boolean -> java.lang.Boolean.TYPE.id
 
-data class JsNullModel(
-    override val classId: ClassId
-) : UtModel(classId) {
+class JsNullModel(
+    classId: JsClassId
+) : JsUtModel(classId) {
     override fun toString() = "null"
 }
 

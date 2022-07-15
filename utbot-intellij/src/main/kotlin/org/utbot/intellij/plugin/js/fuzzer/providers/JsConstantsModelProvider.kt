@@ -1,10 +1,10 @@
 package org.utbot.intellij.plugin.js.fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
+import org.utbot.framework.plugin.api.util.isPrimitive
+import org.utbot.framework.plugin.api.util.jsUndefinedClassId
+import org.utbot.framework.plugin.api.util.toJsClassId
 import org.utbot.fuzzer.*
-import org.utbot.intellij.plugin.js.fuzzer.isPrimitive
-import org.utbot.intellij.plugin.js.fuzzer.jsUndefinedClassId
-import org.utbot.intellij.plugin.js.fuzzer.toJsClassId
 
 object JsConstantsModelProvider : ModelProvider {
 

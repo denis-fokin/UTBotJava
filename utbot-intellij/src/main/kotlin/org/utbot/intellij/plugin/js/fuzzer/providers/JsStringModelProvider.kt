@@ -1,15 +1,13 @@
 package org.utbot.intellij.plugin.js.fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
+import org.utbot.framework.plugin.api.util.jsStringClassId
+import org.utbot.framework.plugin.api.util.jsUndefinedClassId
+import org.utbot.framework.plugin.api.util.toJsClassId
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedParameter
-import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.ModelProvider
 import org.utbot.fuzzer.providers.StringConstantModelProvider
-import org.utbot.intellij.plugin.js.fuzzer.jsStringClassId
-import org.utbot.intellij.plugin.js.fuzzer.jsUndefinedClassId
-import org.utbot.intellij.plugin.js.fuzzer.toJsClassId
-import java.util.function.BiConsumer
 import kotlin.random.Random
 
 object JsStringModelProvider : ModelProvider {
