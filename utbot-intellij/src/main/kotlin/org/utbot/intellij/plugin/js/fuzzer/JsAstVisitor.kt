@@ -1,3 +1,5 @@
+package org.utbot.intellij.plugin.js.fuzzer
+
 import com.oracle.js.parser.ir.BinaryNode
 import com.oracle.js.parser.ir.LexicalContext
 import com.oracle.js.parser.ir.LiteralNode
@@ -7,10 +9,6 @@ import com.oracle.truffle.api.strings.TruffleString
 import org.utbot.framework.plugin.api.util.booleanClassId
 import org.utbot.fuzzer.FuzzedConcreteValue
 import org.utbot.fuzzer.FuzzedOp
-import org.utbot.intellij.plugin.js.fuzzer.jsDoubleClassId
-import org.utbot.intellij.plugin.js.fuzzer.jsIntClassId
-import org.utbot.intellij.plugin.js.fuzzer.jsLongClassId
-import org.utbot.intellij.plugin.js.fuzzer.jsStringClassId
 
 object JsAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
     var lastFuzzedOpGlobal = FuzzedOp.NONE

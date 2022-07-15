@@ -2,6 +2,7 @@ package org.utbot.intellij.plugin.js.fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
 import org.utbot.fuzzer.FuzzedMethodDescription
+import org.utbot.fuzzer.FuzzedParameter
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.ModelProvider
 import org.utbot.intellij.plugin.js.fuzzer.jsUndefinedClassId
@@ -9,12 +10,12 @@ import java.util.function.BiConsumer
 
 object JsUndefinedModelProvider : ModelProvider {
 
-    override fun generate(description: FuzzedMethodDescription, consumer: BiConsumer<Int, FuzzedValue>) {
+    override fun generate(description: FuzzedMethodDescription): Sequence<FuzzedParameter> = sequence {
         val parameters = description.parametersMap.getOrDefault(jsUndefinedClassId, emptyList())
         val primitives: List<FuzzedValue> = generateValues()
         primitives.forEach { model ->
             parameters.forEach { index ->
-                consumer.accept(index, model)
+                yield(FuzzedParameter(index, model))
             }
         }
     }
