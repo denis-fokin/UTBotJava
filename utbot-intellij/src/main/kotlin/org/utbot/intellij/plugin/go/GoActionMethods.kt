@@ -76,10 +76,13 @@ object GoActionMethods {
         return getContainingFunctionOrMethod(parent)
     }
 
+    // unused for now, but may be used for more complicated extract logic in future
+    @Suppress("unused")
     private fun getContainingStruct(element: PsiElement): GoStructType? =
         PsiTreeUtil.getParentOfType(element, GoStructType::class.java, false)
 
-    // unused for now, but potentially can be used to access all methods of receiver's struct
+    // unused for now, but may be used to access all methods of receiver's struct
+    @Suppress("unused")
     private fun getMethodReceiverStruct(method: GoMethodDeclaration): GoStructType {
         val receiverType = method.receiverType
         if (receiverType is GoPointerType) {

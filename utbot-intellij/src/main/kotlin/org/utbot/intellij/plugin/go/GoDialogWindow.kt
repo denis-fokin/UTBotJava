@@ -53,6 +53,10 @@ class GoDialogWindow(val model: GoTestsModel) : DialogWrapper(model.project) {
 
     override fun doOKAction() {
         model.selectedFunctionsOrMethods = functionsOrMethodsTable.selectedMemberInfos.fromInfos()
+        model.srcFiles = model.selectedFunctionsOrMethods
+            .map { it.containingFile }
+            .toSet()
+
         super.doOKAction()
     }
 
@@ -83,7 +87,7 @@ class GoDialogWindow(val model: GoTestsModel) : DialogWrapper(model.project) {
     private fun Collection<GoDeclarationInfo>.fromInfos(): Set<GoFunctionOrMethodDeclaration> =
         this.map { it.declaration as GoFunctionOrMethodDeclaration }.toSet()
 
-    /* further code is copied from GenerateTestsDialogWindow */
+    /* further code is copied from GenerateTestsDialogWindow with very little change (createPackagesByFiles) */
 
     override fun doValidate(): ValidationInfo? {
         val testRoot = getTestRoot()
