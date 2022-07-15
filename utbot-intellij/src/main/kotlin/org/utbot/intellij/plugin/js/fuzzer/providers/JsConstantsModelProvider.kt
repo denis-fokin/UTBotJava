@@ -1,18 +1,14 @@
 package org.utbot.intellij.plugin.js.fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
-import org.utbot.fuzzer.FuzzedMethodDescription
-import org.utbot.fuzzer.FuzzedOp
-import org.utbot.fuzzer.FuzzedValue
-import org.utbot.fuzzer.ModelProvider
+import org.utbot.fuzzer.*
 import org.utbot.intellij.plugin.js.fuzzer.isPrimitive
 import org.utbot.intellij.plugin.js.fuzzer.jsUndefinedClassId
 import org.utbot.intellij.plugin.js.fuzzer.toJsClassId
-import java.util.function.BiConsumer
 
 object JsConstantsModelProvider : ModelProvider {
 
-    override fun generate(description: FuzzedMethodDescription, consumer: BiConsumer<Int, FuzzedValue>) {
+    override fun generate(description: FuzzedMethodDescription): Sequence<FuzzedParameter> = sequence {
         description.concreteValues
             .asSequence()
             .filter { (classId, _) ->
@@ -26,10 +22,10 @@ object JsConstantsModelProvider : ModelProvider {
                     .filterNotNull()
                     .forEach { m ->
                         description.parametersMap.getOrElse(m.model.classId) { emptyList() }.forEach { index ->
-                            consumer.accept(index, m)
+                            yield(FuzzedParameter(index, m))
                         }
                         description.parametersMap.getOrElse(jsUndefinedClassId) { emptyList() }.forEach { index ->
-                            consumer.accept(index, m)
+                            yield(FuzzedParameter(index, m))
                         }
                     }
             }

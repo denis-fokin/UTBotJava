@@ -1,6 +1,5 @@
 package org.utbot.intellij.plugin.js.fuzzer
 
-import JsAstVisitor
 import com.oracle.js.parser.ir.FunctionNode
 import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.MethodId
