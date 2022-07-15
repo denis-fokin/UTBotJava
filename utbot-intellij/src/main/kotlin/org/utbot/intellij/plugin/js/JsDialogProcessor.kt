@@ -1,9 +1,20 @@
 package org.utbot.intellij.plugin.js
 
-import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.oracle.js.parser.ErrorManager
+import com.oracle.js.parser.Parser
+import com.oracle.js.parser.ScriptEnvironment
+import com.oracle.js.parser.Source
+import com.oracle.js.parser.ir.FunctionNode
+import com.oracle.js.parser.ir.VarNode
+import org.graalvm.polyglot.Context
+import org.graalvm.polyglot.Value
+import org.utbot.framework.plugin.api.JsPrimitiveModel
+import org.utbot.fuzzer.FuzzedValue
+import org.utbot.intellij.plugin.js.codegen.JsTest
+import org.utbot.intellij.plugin.js.fuzzer.jsFuzzing
 import org.utbot.intellij.plugin.ui.utils.testModule
 
 object JsDialogProcessor {
@@ -12,7 +23,7 @@ object JsDialogProcessor {
         project: Project,
         srcModule: Module,
         fileMethods: Set<JSMemberInfo>,
-        focusedMethod: JSFunction?,
+        focusedMethod: JSMemberInfo?,
     ) {
         val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
         if (!dialogProcessor.showAndGet()) return
@@ -24,7 +35,7 @@ object JsDialogProcessor {
         project: Project,
         srcModule: Module,
         fileMethods: Set<JSMemberInfo>,
-        focusedMethod: JSFunction?,
+        focusedMethod: JSMemberInfo?,
     ): JsDialogWindow {
         val testModel = srcModule.testModule(project)
 
@@ -40,7 +51,52 @@ object JsDialogProcessor {
     }
 
     private fun createTests(project: Project, model: JsTestsModel) {
-        //TODO
+        model.selectedMethods?.forEach {
+            val funcNode = getFunctionNode(it)
+            val fuzzedValues = jsFuzzing(method = funcNode).toList()
+            //For dev purposes only first set of fuzzed values is picked. TODO: patch this later
+            val params = fuzzedValues.first()
+            val returnValue = runJs(params, funcNode, it.member.text)
+            val jsTest = JsTest(funcNode, params, JsPrimitiveModel(returnValue))
+        }
+    }
+
+    private fun runJs(fuzzedValues: List<FuzzedValue>, method: FunctionNode, funcString: String): Value {
+        val context = Context.newBuilder("js").build()
+        val str = makeStringForRunJs(fuzzedValues, method, funcString)
+        return context.eval("js", str)
+    }
+
+    private fun makeStringForRunJs(fuzzedValue: List<FuzzedValue>, method: FunctionNode, funcString: String): String {
+        val callString = makeCallFunctionString(fuzzedValue, method)
+        return """function $funcString
+                  $callString""".trimIndent()
+    }
+
+    private fun makeCallFunctionString(fuzzedValue: List<FuzzedValue>, method: FunctionNode): String {
+        var callString = "${method.name}("
+        fuzzedValue.forEach { value ->
+            when ((value.model as JsPrimitiveModel).value) {
+                is String -> callString += "\"${(value.model as JsPrimitiveModel).value}\","
+                else -> callString += "${(value.model as JsPrimitiveModel).value},"
+            }
+        }
+        callString = callString.dropLast(1)
+        callString += ')'
+        return callString
+    }
+
+    private fun getFunctionNode(focusedMethod: JSMemberInfo): FunctionNode {
+        val funFixString = "function " + focusedMethod.member.text
+        Thread.currentThread().contextClassLoader = Context::class.java.classLoader
+        val parser = Parser(
+            ScriptEnvironment.builder().build(),
+            Source.sourceFor("test", funFixString),
+            ErrorManager.ThrowErrorManager()
+        )
+        val functionNode = parser.parse()
+        val block = functionNode.body
+        return (block.statements[0] as VarNode).init as FunctionNode
     }
 
 }

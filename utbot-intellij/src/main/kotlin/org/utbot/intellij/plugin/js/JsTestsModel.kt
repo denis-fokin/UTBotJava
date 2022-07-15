@@ -1,6 +1,5 @@
 package org.utbot.intellij.plugin.js
 
-import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
@@ -12,7 +11,7 @@ class JsTestsModel(
     srcModule: Module,
     testModule: Module,
     val fileMethods: Set<JSMemberInfo>,
-    val focusedMethod: Set<JSFunction>?,
+    var selectedMethods: Set<JSMemberInfo>?,
 ) : BaseTestsModel(
     project,
     srcModule,

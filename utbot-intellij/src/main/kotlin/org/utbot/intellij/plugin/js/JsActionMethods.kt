@@ -24,7 +24,7 @@ object JsActionMethods {
 
     private data class PsiTargets(
         val methods: Set<JSMemberInfo>,
-        val focusedMethod: JSFunction?,
+        val focusedMethod: JSMemberInfo?,
         val module: Module,
     )
 
@@ -50,18 +50,26 @@ object JsActionMethods {
         val element = findPsiElement(file, editor) ?: return null
         val module = element.module ?: return null
         val focusedMethod = getContainingMethod(element)
-        containingClass(element)?.let {
+        containingClass(element)?.let { it ->
             val methods = it.functions ?: return null
+            val memberInfos = generateMemberInfo(e.project!!, methods.toList())
+            val focusedMethodMI = memberInfos.find { member ->
+                member.member?.name == focusedMethod?.name
+            }
             return PsiTargets(
-                generateMemberInfo(e.project!!, methods.toList()),
-                focusedMethod,
+                memberInfos,
+                focusedMethodMI,
                 module,
             )
         }
+        val memberInfos = generateMemberInfo(e.project!!, file.statements.filterIsInstance<JSFunction>())
+        val focusedMethodMI = memberInfos.find { member ->
+            member.member?.name == focusedMethod?.name
+        }
         return PsiTargets(
-            generateMemberInfo(e.project!!, file.statements.filterIsInstance<JSFunction>()),
-            focusedMethod,
-            module,
+            memberInfos,
+            focusedMethodMI,
+            module
         )
     }
 
