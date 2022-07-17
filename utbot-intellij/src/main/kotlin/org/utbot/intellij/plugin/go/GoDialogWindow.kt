@@ -194,7 +194,7 @@ class GoDialogWindow(val model: GoTestsModel) : DialogWrapper(model.project) {
             contentEntry.addSourceRootIfAbsent(
                 modifiableModel,
                 testSourceRoot.url,
-                CodegenLanguage.JAVA.testRootType() // TODO: GO
+                CodegenLanguage.GO.testRootType()
             )
             return true
         } finally {

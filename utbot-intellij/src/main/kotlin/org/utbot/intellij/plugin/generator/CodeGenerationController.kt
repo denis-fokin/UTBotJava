@@ -209,6 +209,7 @@ object CodeGenerationController {
                                 when (model.codegenLanguage) {
                                     CodegenLanguage.JAVA -> it !is KtUltraLightClass
                                     CodegenLanguage.KOTLIN -> it is KtUltraLightClass
+                                    CodegenLanguage.GO -> TODO()
                                 }
                             }
                     })
@@ -224,6 +225,7 @@ object CodeGenerationController {
             when (model.codegenLanguage) {
                 CodegenLanguage.JAVA -> JavaTemplateUtil.INTERNAL_CLASS_TEMPLATE_NAME
                 CodegenLanguage.KOTLIN -> "Kotlin Class"
+                CodegenLanguage.GO -> TODO()
             }
         )
         runWriteAction { testDirectory.findFile(testClassName + model.codegenLanguage.extension)?.delete() }
@@ -329,6 +331,7 @@ object CodeGenerationController {
                 JavaCodeStyleManager.getInstance(project).shortenClassReferences(reformatRange)
             }
             CodegenLanguage.KOTLIN -> ShortenReferences.DEFAULT.process((testClass as KtUltraLightClass).kotlinOrigin.containingKtFile)
+            CodegenLanguage.GO -> TODO()
         }
     }
 
