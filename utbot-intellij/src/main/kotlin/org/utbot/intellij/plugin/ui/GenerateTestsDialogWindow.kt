@@ -6,14 +6,6 @@ import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.icons.AllIcons
 import org.utbot.common.PathUtil.toPath
 import org.utbot.framework.UtSettings
-import org.utbot.framework.codegen.ForceStaticMocking
-import org.utbot.framework.codegen.Junit4
-import org.utbot.framework.codegen.Junit5
-import org.utbot.framework.codegen.NoStaticMocking
-import org.utbot.framework.codegen.ParametrizedTestSource
-import org.utbot.framework.codegen.StaticsMocking
-import org.utbot.framework.codegen.TestFramework
-import org.utbot.framework.codegen.TestNg
 import org.utbot.framework.codegen.model.util.MOCKITO_EXTENSIONS_FILE_CONTENT
 import org.utbot.framework.codegen.model.util.MOCKITO_EXTENSIONS_STORAGE
 import org.utbot.framework.codegen.model.util.MOCKITO_MOCKMAKER_FILE_NAME
@@ -124,6 +116,7 @@ import javax.swing.JPanel
 import kotlin.streams.toList
 import org.jetbrains.concurrency.thenRun
 import org.jetbrains.kotlin.asJava.classes.KtUltraLightClass
+import org.utbot.framework.codegen.*
 import org.utbot.intellij.plugin.ui.utils.allLibraries
 
 private const val RECENTS_KEY = "org.utbot.recents"
@@ -657,6 +650,7 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
             Junit4 -> jUnit4LibraryDescriptor(versionInProject)
             Junit5 -> jUnit5LibraryDescriptor(versionInProject)
             TestNg -> testNgLibraryDescriptor(versionInProject)
+            Mocha -> throw UnsupportedOperationException()
         }
 
         selectedTestFramework.isInstalled = true

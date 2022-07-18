@@ -3,13 +3,8 @@ package org.utbot.framework.codegen.model.constructor.tree
 import org.utbot.common.PathUtil
 import org.utbot.common.packageName
 import org.utbot.engine.isStatic
-import org.utbot.framework.codegen.ForceStaticMocking
-import org.utbot.framework.codegen.JUNIT5_PARAMETERIZED_PACKAGE
-import org.utbot.framework.codegen.Junit4
-import org.utbot.framework.codegen.Junit5
-import org.utbot.framework.codegen.ParametrizedTestSource
+import org.utbot.framework.codegen.*
 import org.utbot.framework.codegen.RuntimeExceptionTestsBehaviour.PASS
-import org.utbot.framework.codegen.TestNg
 import org.utbot.framework.codegen.model.constructor.builtin.closeMethodIdOrNull
 import org.utbot.framework.codegen.model.constructor.builtin.forName
 import org.utbot.framework.codegen.model.constructor.builtin.getClass
@@ -1434,6 +1429,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             statements
         }
         Junit4 -> error("Parameterized tests are not supported for JUnit4")
+        Mocha -> error("Parameterized tests are not supported for Mocha")
     }
 
     /**
@@ -1461,6 +1457,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                 ),
             )
             Junit4 -> error("Parameterized tests are not supported for JUnit4")
+            Mocha -> error("Parameterized tests are not supported for Mocha")
         }
 
     /**
@@ -1476,6 +1473,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             CgDeclaration(argListClassId(), "argList", allocateArrayCall)
         }
         Junit4 -> error("Parameterized tests are not supported for JUnit4")
+        Mocha -> error("Parameterized tests are not supported for Mocha")
     }
 
     /**
@@ -1498,6 +1496,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             packageName = Array<Array<Any?>?>::class.java.packageName,
         )
         Junit4 -> error("Parameterized tests are not supported for JUnit4")
+        Mocha -> error("Parameterized tests are not supported for Mocha")
     }
 
 
@@ -1569,6 +1568,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                 ),
             )
             Junit4 -> error("Parameterized tests are not supported for JUnit4")
+            Mocha -> error("Parameterized tests are not supported for Mocha")
         }
 
     private fun testMethod(
