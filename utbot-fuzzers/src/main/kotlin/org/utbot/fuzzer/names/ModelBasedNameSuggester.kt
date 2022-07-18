@@ -1,13 +1,6 @@
 package org.utbot.fuzzer.names
 
-import org.utbot.framework.plugin.api.UtExecutionFailure
-import org.utbot.framework.plugin.api.UtExecutionResult
-import org.utbot.framework.plugin.api.UtExecutionSuccess
-import org.utbot.framework.plugin.api.UtExplicitlyThrownException
-import org.utbot.framework.plugin.api.UtImplicitlyThrownException
-import org.utbot.framework.plugin.api.UtNullModel
-import org.utbot.framework.plugin.api.UtPrimitiveModel
-import org.utbot.framework.plugin.api.exceptionOrNull
+import org.utbot.framework.plugin.api.*
 import org.utbot.framework.plugin.api.util.voidClassId
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
@@ -105,7 +98,8 @@ class ModelBasedNameSuggester(
             is UtExecutionSuccess -> result.model.let { m ->
                 when {
                     m is UtPrimitiveModel && m.classId != voidClassId -> "-> return " + m.value
-                    m is UtNullModel -> "-> return null"
+                    m is UtNullModel || m is JsNullModel -> "-> return null"
+                    m is JsPrimitiveModel -> "-> return " + m.value
                     else -> null
                 }
             }
