@@ -10,22 +10,7 @@ import org.utbot.framework.plugin.api.CodeGenerationSettingBox
 import org.utbot.framework.plugin.api.CodeGenerationSettingItem
 import org.utbot.framework.plugin.api.MethodId
 import org.utbot.framework.plugin.api.isolateCommandLineArgumentsToArgumentFile
-import org.utbot.framework.plugin.api.util.booleanArrayClassId
-import org.utbot.framework.plugin.api.util.booleanClassId
-import org.utbot.framework.plugin.api.util.builtinMethodId
-import org.utbot.framework.plugin.api.util.builtinStaticMethodId
-import org.utbot.framework.plugin.api.util.byteArrayClassId
-import org.utbot.framework.plugin.api.util.charArrayClassId
-import org.utbot.framework.plugin.api.util.doubleArrayClassId
-import org.utbot.framework.plugin.api.util.doubleClassId
-import org.utbot.framework.plugin.api.util.floatArrayClassId
-import org.utbot.framework.plugin.api.util.floatClassId
-import org.utbot.framework.plugin.api.util.id
-import org.utbot.framework.plugin.api.util.intArrayClassId
-import org.utbot.framework.plugin.api.util.longArrayClassId
-import org.utbot.framework.plugin.api.util.objectClassId
-import org.utbot.framework.plugin.api.util.shortArrayClassId
-import org.utbot.framework.plugin.api.util.voidClassId
+import org.utbot.framework.plugin.api.util.*
 import java.io.File
 import org.utbot.framework.plugin.api.util.longClassId
 import org.utbot.framework.plugin.api.util.voidWrapperClassId
@@ -518,6 +503,38 @@ object Junit5 : TestFramework("JUnit5") {
         add(classPath.split(File.pathSeparator).single { platformJarName in it })
         add(isolateCommandLineArgumentsToArgumentFile(listOf("-cp", classPath).plus(classesNames.map { "-c=$it" })))
     }
+}
+
+object Mocha : TestFramework("Mocha") {
+    override val mainPackage = ""
+    override val assertionsClass = jsUndefinedClassId
+    override val arraysAssertionsClass = jsUndefinedClassId
+    override val testAnnotation = ""
+    override val testAnnotationFqn = ""
+
+    override val parameterizedTestAnnotation = "Parameterized tests are not supported for Mocha"
+    override val parameterizedTestAnnotationFqn = "Parameterized tests are not supported for Mocha"
+    override val methodSourceAnnotation = "Parameterized tests are not supported for Mocha"
+    override val methodSourceAnnotationFqn = "Parameterized tests are not supported for Mocha"
+
+    override val testAnnotationId = BuiltinClassId(
+        name = "Mocha",
+        canonicalName = "Mocha",
+        simpleName = "Test"
+    )
+
+    override val parameterizedTestAnnotationId = jsUndefinedClassId
+    override val methodSourceAnnotationId = jsUndefinedClassId
+
+    override fun getRunTestsCommand(
+        executionInvoke: String,
+        classPath: String,
+        classesNames: List<String>,
+        buildDirectory: String
+    ): List<String> {
+        throw UnsupportedOperationException()
+    }
+
 }
 
 enum class RuntimeExceptionTestsBehaviour(

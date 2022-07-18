@@ -1482,6 +1482,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             statements
         }
         Junit4 -> error("Parameterized tests are not supported for JUnit4")
+        Mocha -> error("Parameterized tests are not supported for Mocha")
     }
 
     /**
@@ -1509,6 +1510,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                 ),
             )
             Junit4 -> error("Parameterized tests are not supported for JUnit4")
+            Mocha -> error("Parameterized tests are not supported for Mocha")
         }
 
     /**
@@ -1524,6 +1526,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             CgDeclaration(argListClassId(), "argList", allocateArrayCall)
         }
         Junit4 -> error("Parameterized tests are not supported for JUnit4")
+        Mocha -> error("Parameterized tests are not supported for Mocha")
     }
 
     /**
@@ -1546,6 +1549,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             packageName = Array<Array<Any?>?>::class.java.packageName,
         )
         Junit4 -> error("Parameterized tests are not supported for JUnit4")
+        Mocha -> error("Parameterized tests are not supported for Mocha")
     }
 
 
@@ -1605,6 +1609,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                 ),
             )
             Junit4 -> error("Parameterized tests are not supported for JUnit4")
+            Mocha -> error("Parameterized tests are not supported for Mocha")
         }
 
     private fun testMethod(
