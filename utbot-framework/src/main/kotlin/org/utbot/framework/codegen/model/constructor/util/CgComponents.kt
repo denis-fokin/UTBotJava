@@ -2,6 +2,7 @@ package org.utbot.framework.codegen.model.constructor.util
 
 import org.utbot.framework.codegen.Junit4
 import org.utbot.framework.codegen.Junit5
+import org.utbot.framework.codegen.Mocha
 import org.utbot.framework.codegen.TestNg
 import org.utbot.framework.codegen.model.constructor.context.CgContext
 import org.utbot.framework.codegen.model.constructor.name.CgNameGenerator
@@ -33,6 +34,7 @@ internal object CgComponents {
         is Junit4 -> testFrameworkManagers.getOrPut(context) { Junit4Manager(context) }
         is Junit5 -> testFrameworkManagers.getOrPut(context) { Junit5Manager(context) }
         is TestNg -> testFrameworkManagers.getOrPut(context) { TestNgManager(context) }
+        is Mocha -> throw UnsupportedOperationException()
     }
 
     fun getMockFrameworkManagerBy(context: CgContext) =
