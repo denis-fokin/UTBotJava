@@ -4,11 +4,10 @@ import org.utbot.go.GoFunctionOrMethodNode
 import org.utbot.go.GoFuzzedFunctionOrMethodTestCase
 
 fun generateTestCases(
-    functionOrMethodNode: GoFunctionOrMethodNode,
-    testSourceRoot: String
+    functionOrMethodNode: GoFunctionOrMethodNode
 ): List<GoFuzzedFunctionOrMethodTestCase> = goFuzzing(functionOrMethodNode = functionOrMethodNode)
-    .map {
-        val executionResult = executeGo(functionOrMethodNode, it, testSourceRoot)
-        GoFuzzedFunctionOrMethodTestCase(functionOrMethodNode, it, executionResult)
+    .map { fuzzedParametersValues ->
+        val executionResult = executeGo(functionOrMethodNode, fuzzedParametersValues)
+        GoFuzzedFunctionOrMethodTestCase(functionOrMethodNode, fuzzedParametersValues, executionResult)
     }
     .toList()

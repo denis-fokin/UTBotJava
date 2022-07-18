@@ -569,11 +569,16 @@ open class GoUtModel(
     override val classId: GoClassId
 ): UtModel(classId)
 
-@Suppress("unused")
 data class GoUtPrimitiveModel(
     val value: Any,
 ) : GoUtModel(primitiveModelValueToGoClassId(value)) {
-    override fun toString() = value.toString()
+
+    override fun toString() =
+        if (classId == goStringClassId) {
+            "\"$value\""
+        } else {
+            value.toString()
+        }
 }
 
 // TODO: maybe add unsigned kotlin types
@@ -586,6 +591,7 @@ private fun primitiveModelValueToGoClassId(value: Any) = when (value) {
     is Float -> goFloat32ClassId
     is Double -> goFloat64ClassId
     is Boolean -> goBoolClassId
+    is String -> goStringClassId
     else -> error("undefined class")
 }
 

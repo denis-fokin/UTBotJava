@@ -1,12 +1,13 @@
 package org.utbot.go.providers
 
 import org.utbot.framework.plugin.api.GoClassId
+import org.utbot.framework.plugin.api.GoUtPrimitiveModel
 import org.utbot.framework.plugin.api.UtPrimitiveModel
 import org.utbot.framework.plugin.api.util.isPrimitive
 import org.utbot.fuzzer.*
 import org.utbot.fuzzer.ModelProvider.Companion.yieldValue
 
-// This class is a copy of ConstantsModelProvider up to GoClassId.isPrimitive usage.
+// This class is a copy of ConstantsModelProvider up to GoClassId.isPrimitive and GoUtPrimitiveModel usage.
 @Suppress("DuplicatedCode")
 object GoConstantsModelProvider : ModelProvider {
 
@@ -16,7 +17,7 @@ object GoConstantsModelProvider : ModelProvider {
             .filter { (classId, _, _) -> (classId as GoClassId).isPrimitive }
             .forEach { (_, value, op) ->
                 sequenceOf(
-                    UtPrimitiveModel(value).fuzzed { summary = "%var% = $value" },
+                    GoUtPrimitiveModel(value).fuzzed { summary = "%var% = $value" },
                     modifyValue(value, op)
                 )
                     .filterNotNull()

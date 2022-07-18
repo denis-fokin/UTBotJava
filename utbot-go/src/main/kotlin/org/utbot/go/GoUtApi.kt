@@ -15,11 +15,11 @@ sealed class GoAstNode {
 }
 
 // TODO: remove, it's temporary
-data class GoDummyNode(val text: String): GoAstNode()
+data class GoDummyNode(val text: String) : GoAstNode()
 
-data class GoFileNode(val name: String) : GoAstNode()
+data class GoFileNode(val name: String, val containingPackage: String) : GoAstNode()
 
-data class GoFunctionOrMethodArgumentNode(val name: String, val type: GoClassId): GoAstNode()
+data class GoFunctionOrMethodArgumentNode(val name: String, val type: GoClassId) : GoAstNode()
 
 data class GoFunctionOrMethodNode(
     val name: String,
@@ -27,7 +27,7 @@ data class GoFunctionOrMethodNode(
     val parameters: List<GoFunctionOrMethodArgumentNode>,
     val body: GoAstNode,
     val containingFileNode: GoFileNode
-): GoAstNode() {
+) : GoAstNode() {
     val parametersNames get() = parameters.map { it.name }
     val parametersTypes get() = parameters.map { it.type }
 }
@@ -43,4 +43,6 @@ data class GoFuzzedFunctionOrMethodTestCase(
     val functionOrMethodNode: GoFunctionOrMethodNode,
     val fuzzedParametersValues: List<FuzzedValue>,
     val executionResultValue: GoUtModel,
-)
+) {
+    val containingPackage: String get() = functionOrMethodNode.containingFileNode.containingPackage
+}

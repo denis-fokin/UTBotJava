@@ -1,5 +1,6 @@
 package org.utbot.intellij.plugin.go
 
+import com.goide.psi.GoFile
 import com.goide.psi.GoFunctionOrMethodDeclaration
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.module.Module
@@ -7,11 +8,12 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.asJava.namedUnwrappedElement
 import org.utbot.framework.plugin.api.GoClassId
 import org.utbot.go.*
-import org.utbot.go.codegen.generateTestsFilesAndCode
 import org.utbot.go.fuzzer.generateTestCases
 import org.utbot.intellij.plugin.ui.utils.testModule
+import java.io.File
 
 object GoDialogProcessor {
 
@@ -47,9 +49,6 @@ object GoDialogProcessor {
     }
 
     private fun createTests(project: Project, model: GoTestsModel) {
-        println("Generate tests for:")
-        model.selectedFunctionsOrMethods.forEach { println("${it.name}") }
-
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Generate Go tests") {
             override fun run(indicator: ProgressIndicator) {
 
@@ -58,21 +57,20 @@ object GoDialogProcessor {
 //                indicator.isIndeterminate = false
 //                indicator.text = "Generate tests: read classes"
 
-                val goFunctionsOrMethodsNodes = model.selectedFunctionsOrMethods.map { it.toGoFunctionOrMethodNode() }
+                val goFunctionsOrMethods = model.selectedFunctionsOrMethods
 
-                val testSourceRoot = model.testSourceRoot!!.path
-                val testCasesByFile = mutableMapOf<GoFileNode, MutableList<GoFuzzedFunctionOrMethodTestCase>>()
+                val testCasesByFile = mutableMapOf<GoFile, MutableList<GoFuzzedFunctionOrMethodTestCase>>()
 
-                for (goFunctionOrMethod in goFunctionsOrMethodsNodes) {
+                for (goFunctionOrMethod in goFunctionsOrMethods) {
 //                    indicator.text = "Generate test cases for ${goFunctionOrMethod.name}"
 //                    indicator.fraction =
 //                        indicator.fraction.coerceAtLeast(0.9 * processedFunctionsOrMethods / totalFunctionsOrMethods)
 
-                    val testCases = generateTestCases(goFunctionOrMethod, testSourceRoot)
+                    val testCases = generateTestCases(goFunctionOrMethod.toGoFunctionOrMethodNode())
 
-                    val fileNode = goFunctionOrMethod.containingFileNode
-                    testCasesByFile.putIfAbsent(fileNode, mutableListOf())
-                    testCasesByFile[fileNode]!!.addAll(testCases)
+                    val file = goFunctionOrMethod.containingFile
+                    testCasesByFile.putIfAbsent(file, mutableListOf())
+                    testCasesByFile[file]!!.addAll(testCases)
                 }
 
 //                indicator.fraction = indicator.fraction.coerceAtLeast(0.9)
@@ -81,7 +79,7 @@ object GoDialogProcessor {
                 // indicator.checkCanceled()
 
                 invokeLater {
-                    generateTestsFilesAndCode(testCasesByFile)
+                    GoCodeGenerationController.generateTestsFilesAndCode(model, testCasesByFile.toMap())
                 }
             }
         })
@@ -90,12 +88,12 @@ object GoDialogProcessor {
     // TODO: fix "Read access is allowed from event dispatch thread or inside read-action only"
     private fun GoFunctionOrMethodDeclaration.toGoFunctionOrMethodNode(): GoFunctionOrMethodNode =
         GoFunctionOrMethodNode(
-            this.qualifiedName!!,
+            this.name!!,
             GoClassId(this.resultType.presentationText),
             this.signature!!.parameters.parameterDeclarationList.map { paramDecl ->
-                GoFunctionOrMethodArgumentNode(paramDecl.text, GoClassId(paramDecl.type!!.presentationText))
+                GoFunctionOrMethodArgumentNode(paramDecl.namedUnwrappedElement!!.name!!, GoClassId(paramDecl.type!!.presentationText))
             },
             GoDummyNode(this.block!!.text),
-            GoFileNode(this.containingFile.name)
+            GoFileNode(File(containingFile.name).nameWithoutExtension, containingFile.canonicalPackageName!!)
         )
 }
