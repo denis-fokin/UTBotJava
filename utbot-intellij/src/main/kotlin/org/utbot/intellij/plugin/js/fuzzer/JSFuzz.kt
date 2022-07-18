@@ -14,15 +14,10 @@ import org.utbot.intellij.plugin.js.fuzzer.providers.JsUndefinedModelProvider
 
 fun jsFuzzing(
     modelProvider: (ModelProvider) -> ModelProvider = { it },
-    method: FunctionNode
+    method: FunctionNode,
+    methodUnderTestDescription: FuzzedMethodDescription
 ): Sequence<List<FuzzedValue>> {
-    val execId = MethodId(
-        JsClassId("debug"),
-        method.name.toString(),
-        jsUndefinedClassId,
-        method.parameters.toList().map { jsUndefinedClassId }
-    )
-    method.body.accept(JsAstVisitor)
+
     val modelProviderWithFallback = modelProvider(
         ModelProvider.of(
             JsConstantsModelProvider,
@@ -30,10 +25,6 @@ fun jsFuzzing(
             JsStringModelProvider,
         )
     )
-    val methodUnderTestDescription = FuzzedMethodDescription(execId, JsAstVisitor.fuzzedConcreteValues).apply {
-        compilableName = method.name.toString()
-        val names = method.parameters.map { it.name.toString() }
-        parameterNameMap = { index -> names.getOrNull(index) }
-    }
+
     return fuzz(methodUnderTestDescription, modelProviderWithFallback)
 }
