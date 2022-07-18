@@ -21,6 +21,7 @@ buildscript {
 
 dependencies {
     api ('com.esotericsoftware:kryo:5.1.1')
+    api project(':utbot-go')
 
     implementation group: 'io.github.microutils', name: 'kotlin-logging', version: kotlin_logging_version
     implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin', version: jackson_version

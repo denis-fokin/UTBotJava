@@ -1,0 +1,24 @@
+apply from: "${parent.projectDir}/gradle/include/jvm-project.gradle"
+
+group 'org.utbot'
+version '1.0-SNAPSHOT'
+
+compileKotlin {
+    kotlinOptions {
+        allWarningsAsErrors = false
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    api project(':utbot-fuzzers')
+}
+
+test {
+    useJUnitPlatform()
+}

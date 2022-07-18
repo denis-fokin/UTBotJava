@@ -1,6 +1,5 @@
 package org.utbot.intellij.plugin.go
 
-import com.goide.psi.GoFile
 import com.goide.psi.GoFunctionOrMethodDeclaration
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.module.Module
@@ -8,7 +7,10 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import org.utbot.framework.plugin.api.UtMethodTestSet
+import org.utbot.framework.plugin.api.GoClassId
+import org.utbot.go.*
+import org.utbot.go.codegen.generateTestsFilesAndCode
+import org.utbot.go.fuzzer.generateTestCases
 import org.utbot.intellij.plugin.ui.utils.testModule
 
 object GoDialogProcessor {
@@ -56,23 +58,21 @@ object GoDialogProcessor {
 //                indicator.isIndeterminate = false
 //                indicator.text = "Generate tests: read classes"
 
-//                val goFunctionsOrMethods = findSelectedGoFunctionsOrMethods(model) // TODO
-                val goFunctionsOrMethods = model.selectedFunctionsOrMethods
+                val goFunctionsOrMethodsNodes = model.selectedFunctionsOrMethods.map { it.toGoFunctionOrMethodNode() }
 
                 val testSourceRoot = model.testSourceRoot!!.path
+                val testCasesByFile = mutableMapOf<GoFileNode, MutableList<GoFuzzedFunctionOrMethodTestCase>>()
 
-                val testSetsByFile = mutableMapOf<GoFile, MutableList<UtMethodTestSet>>()
-
-                for (goFunctionOrMethod in goFunctionsOrMethods) {
+                for (goFunctionOrMethod in goFunctionsOrMethodsNodes) {
 //                    indicator.text = "Generate test cases for ${goFunctionOrMethod.name}"
 //                    indicator.fraction =
 //                        indicator.fraction.coerceAtLeast(0.9 * processedFunctionsOrMethods / totalFunctionsOrMethods)
 
-                    val testSets = generateTestSets(goFunctionOrMethod, testSourceRoot)
+                    val testCases = generateTestCases(goFunctionOrMethod, testSourceRoot)
 
-                    val file = goFunctionOrMethod.containingFile
-                    testSetsByFile.putIfAbsent(file, mutableListOf())
-                    testSetsByFile[file]!!.addAll(testSets)
+                    val fileNode = goFunctionOrMethod.containingFileNode
+                    testCasesByFile.putIfAbsent(fileNode, mutableListOf())
+                    testCasesByFile[fileNode]!!.addAll(testCases)
                 }
 
 //                indicator.fraction = indicator.fraction.coerceAtLeast(0.9)
@@ -81,25 +81,21 @@ object GoDialogProcessor {
                 // indicator.checkCanceled()
 
                 invokeLater {
-                    generateTestsCode(model, testSetsByFile)
+                    generateTestsFilesAndCode(testCasesByFile)
                 }
             }
         })
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun generateTestSets(
-        functionOrMethod: GoFunctionOrMethodDeclaration,
-        testSourceRoot: String
-    ): List<UtMethodTestSet> {
-        // TODO
-        println("Generate test sets")
-        return emptyList()
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    private fun generateTestsCode(model: GoTestsModel, testSetsByFile: Map<GoFile, List<UtMethodTestSet>>) {
-        // TODO
-        println("Generate code for tests")
-    }
+    // TODO: fix "Read access is allowed from event dispatch thread or inside read-action only"
+    private fun GoFunctionOrMethodDeclaration.toGoFunctionOrMethodNode(): GoFunctionOrMethodNode =
+        GoFunctionOrMethodNode(
+            this.qualifiedName!!,
+            GoClassId(this.resultType.presentationText),
+            this.signature!!.parameters.parameterDeclarationList.map { paramDecl ->
+                GoFunctionOrMethodArgumentNode(paramDecl.text, GoClassId(paramDecl.type!!.presentationText))
+            },
+            GoDummyNode(this.block!!.text),
+            GoFileNode(this.containingFile.name)
+        )
 }

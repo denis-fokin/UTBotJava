@@ -14,25 +14,7 @@ import org.utbot.framework.UtSettings
 import org.utbot.framework.plugin.api.MockFramework.MOCKITO
 import org.utbot.framework.plugin.api.impl.FieldIdReflectionStrategy
 import org.utbot.framework.plugin.api.impl.FieldIdSootStrategy
-import org.utbot.framework.plugin.api.util.booleanClassId
-import org.utbot.framework.plugin.api.util.byteClassId
-import org.utbot.framework.plugin.api.util.charClassId
-import org.utbot.framework.plugin.api.util.constructor
-import org.utbot.framework.plugin.api.util.doubleClassId
-import org.utbot.framework.plugin.api.util.executableId
-import org.utbot.framework.plugin.api.util.findFieldOrNull
-import org.utbot.framework.plugin.api.util.floatClassId
-import org.utbot.framework.plugin.api.util.id
-import org.utbot.framework.plugin.api.util.intClassId
-import org.utbot.framework.plugin.api.util.isArray
-import org.utbot.framework.plugin.api.util.isPrimitive
-import org.utbot.framework.plugin.api.util.jClass
-import org.utbot.framework.plugin.api.util.longClassId
-import org.utbot.framework.plugin.api.util.method
-import org.utbot.framework.plugin.api.util.primitiveTypeJvmNameOrNull
-import org.utbot.framework.plugin.api.util.shortClassId
-import org.utbot.framework.plugin.api.util.toReferenceTypeBytecodeSignature
-import org.utbot.framework.plugin.api.util.voidClassId
+import org.utbot.framework.plugin.api.util.*
 import soot.ArrayType
 import soot.BooleanType
 import soot.ByteType
@@ -576,6 +558,43 @@ val ArrayType.id: ClassId
         }
         return ClassId("[$elementTypeName", elementId)
     }
+
+// TODO: rename into GoTypeId?
+class GoClassId(private val goName: String) : ClassId(goName) {
+    override val simpleName: String
+        get() = goName
+}
+
+open class GoUtModel(
+    override val classId: GoClassId
+): UtModel(classId)
+
+@Suppress("unused")
+data class GoUtPrimitiveModel(
+    val value: Any,
+) : GoUtModel(primitiveModelValueToGoClassId(value)) {
+    override fun toString() = value.toString()
+}
+
+// TODO: maybe add unsigned kotlin types
+private fun primitiveModelValueToGoClassId(value: Any) = when (value) {
+    is Byte -> goInt8ClassId
+    is Short -> goInt16ClassId
+    is Char -> goUint16ClassId
+    is Int -> goInt32ClassId
+    is Long -> goInt64ClassId
+    is Float -> goFloat32ClassId
+    is Double -> goFloat64ClassId
+    is Boolean -> goBoolClassId
+    else -> error("undefined class")
+}
+
+@Suppress("unused")
+class GoUtNullModel(
+    classId: GoClassId
+) : GoUtModel(classId) {
+    override fun toString() = "nil"
+}
 
 /**
  * Converts Soot Type to class id.
