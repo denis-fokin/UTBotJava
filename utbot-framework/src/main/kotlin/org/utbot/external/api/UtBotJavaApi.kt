@@ -84,6 +84,7 @@ object UtBotJavaApi {
         return withUtContext(utContext) {
             val codeGenerator = CodeGenerator(
                     classUnderTest = classUnderTest,
+                    codegenUtilsLibraryUsed = false,
                     testFramework = testFramework,
                     mockFramework = mockFramework,
                     codegenLanguage = codegenLanguage,

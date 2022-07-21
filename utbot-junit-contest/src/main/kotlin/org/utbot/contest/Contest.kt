@@ -211,6 +211,7 @@ fun runGeneration(
 
     val codeGenerator = CodeGenerator(
             cut.classId.jClass,
+            codegenUtilsLibraryUsed = false, // TODO: check. Probably we don't need a library for contest
             testFramework = junitByVersion(junitVersion),
             staticsMocking = staticsMocking,
             forceStaticMocking = forceStaticMocking,
