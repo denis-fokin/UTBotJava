@@ -509,6 +509,8 @@ class Resolver(
         }
 
         val sootClass = actualType.sootClass
+        // TODO: We now allow anonymous classes and lambdas to be used if that is the only option.
+        // In case sootClass represents a lambda, we will not be able to load its class here, so some workaround is required.
         val clazz = classLoader.loadClass(sootClass.name)
 
         if (clazz.isEnum) {

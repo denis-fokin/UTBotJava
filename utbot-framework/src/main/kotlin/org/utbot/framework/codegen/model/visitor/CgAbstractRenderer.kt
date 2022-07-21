@@ -17,6 +17,7 @@ import org.utbot.framework.codegen.model.tree.CgComment
 import org.utbot.framework.codegen.model.tree.CgCommentedAnnotation
 import org.utbot.framework.codegen.model.tree.CgComparison
 import org.utbot.framework.codegen.model.tree.CgContinueStatement
+import org.utbot.framework.codegen.model.tree.CgCustomMethod
 import org.utbot.framework.codegen.model.tree.CgDeclaration
 import org.utbot.framework.codegen.model.tree.CgDecrement
 import org.utbot.framework.codegen.model.tree.CgDoWhileLoop
@@ -222,6 +223,12 @@ internal abstract class CgAbstractRenderer(val context: CgContext, val printer: 
         }
         renderMethodSignature(element)
         visit(element as CgMethod)
+    }
+
+    override fun visit(element: CgCustomMethod) {
+        renderMethodDocumentation(element)
+//        for (annotation in element.annotations)
+        // TODO
     }
 
     override fun visit(element: CgErrorTestMethod) {

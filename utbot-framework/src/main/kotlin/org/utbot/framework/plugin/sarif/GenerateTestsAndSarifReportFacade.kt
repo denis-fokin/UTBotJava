@@ -71,6 +71,7 @@ class GenerateTestsAndSarifReportFacade(
 
         return CodeGenerator(
             classUnderTest = targetClass.classUnderTest.java,
+            codegenUtilsLibraryUsed = TODO("figure out if we need codegen utils library here"),
             testFramework = sarifProperties.testFramework,
             mockFramework = sarifProperties.mockFramework,
             staticsMocking = sarifProperties.staticsMocking,

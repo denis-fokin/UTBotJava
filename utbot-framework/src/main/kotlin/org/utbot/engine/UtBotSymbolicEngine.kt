@@ -453,14 +453,15 @@ class UtBotSymbolicEngine(
                 val concreteExecutionResult =
                     concreteExecutor.executeConcretely(methodUnderTest, initialEnvironmentModels, listOf())
 
-                workaround(REMOVE_ANONYMOUS_CLASSES) {
-                    concreteExecutionResult.result.onSuccess {
-                        if (it.classId.isAnonymous) {
-                            logger.debug("Anonymous class found as a concrete result, symbolic one will be returned")
-                            return@flow
-                        }
-                    }
-                }
+                // do not remove concrete results of anonymous classes, because now we are able to generate code for them
+//                workaround(REMOVE_ANONYMOUS_CLASSES) {
+//                    concreteExecutionResult.result.onSuccess {
+//                        if (it.classId.isAnonymous) {
+//                            logger.debug("Anonymous class found as a concrete result, symbolic one will be returned")
+//                            return@flow
+//                        }
+//                    }
+//                }
 
                 val count = coveredInstructionTracker.add(concreteExecutionResult.coverage.coveredInstructions)
                 if (count.count > 1) {

@@ -73,3 +73,5 @@ inline fun <reified R> Field.withAccessibility(block: () -> R): R {
         setModifiers(this, prevModifiers)
     }
 }
+
+// TODO: find method of lambda given its name instead of loading a class for it (because lambda classes don't exist)

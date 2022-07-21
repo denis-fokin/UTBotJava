@@ -79,6 +79,31 @@ class CgTestMethodBuilder : CgMethodBuilder<CgTestMethod> {
 
 fun buildTestMethod(init: CgTestMethodBuilder.() -> Unit) = CgTestMethodBuilder().apply(init).build()
 
+class CgCustomMethodBuilder : CgMethodBuilder<CgCustomMethod> {
+    override lateinit var name: String
+    override lateinit var returnType: ClassId
+    override lateinit var parameters: List<CgParameterDeclaration>
+    override lateinit var statements: List<CgStatement>
+    override val exceptions: MutableSet<ClassId> = mutableSetOf()
+    override val annotations: MutableList<CgAnnotation> = mutableListOf()
+    override var documentation: CgDocumentationComment = CgDocumentationComment(emptyList())
+    var isStatic: Boolean = false
+
+    override fun build() = CgCustomMethod(
+        name,
+        returnType,
+        parameters,
+        statements,
+        exceptions,
+        annotations,
+        isStatic,
+        documentation
+    )
+}
+
+@Suppress("unused")
+fun buildCustomMethod(init: CgCustomMethodBuilder.() -> Unit) = CgCustomMethodBuilder().apply(init).build()
+
 class CgErrorTestMethodBuilder : CgMethodBuilder<CgErrorTestMethod> {
     override lateinit var name: String
     override val returnType: ClassId = voidClassId

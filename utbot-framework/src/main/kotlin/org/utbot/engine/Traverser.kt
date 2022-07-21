@@ -3310,9 +3310,22 @@ class Traverser(
         if (returnValue != null) {
             queuedSymbolicStateUpdates += constructConstraintForType(returnValue, returnValue.possibleConcreteTypes).asSoftConstraint()
 
+            // TODO: do not remove anonymous classes for return value when it is the only option
+            // see: returnValue.typeStorage.possibleConcreteTypes
             workaround(REMOVE_ANONYMOUS_CLASSES) {
                 val sootClass = returnValue.type.sootClass
-                if (!environment.state.isInNestedMethod() && (sootClass.isAnonymous || sootClass.isArtificialEntity)) {
+                val isInNestedMethod = environment.state.isInNestedMethod()
+
+                if (!isInNestedMethod && sootClass.isArtificialEntity) {
+                    return
+                }
+
+                val onlyAnonymousTypesAndLambdasAvailable = returnValue.typeStorage.possibleConcreteTypes.all {
+                    // only ref types can be anonymous or lambdas
+                    val type = (it as? RefType)?.sootClass ?: return@all false
+                    type.isLambda || type.isAnonymous
+                }
+                if (!isInNestedMethod && sootClass.isAnonymous && !onlyAnonymousTypesAndLambdasAvailable) {
                     return
                 }
             }

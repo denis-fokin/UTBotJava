@@ -205,6 +205,7 @@ abstract class GenerateTestsAbstractCommand(name: String, help: String) :
             forceStaticMocking == ForceStaticMocking.FORCE && staticsMocking is NoStaticMocking
         return CodeGenerator(
             testFramework = testFrameworkByName(testFramework),
+            codegenUtilsLibraryUsed = TODO("check utils library presense on the classpath option of the command"),
             classUnderTest = classUnderTest.java,
             codegenLanguage = codegenLanguage,
             staticsMocking = staticsMocking,

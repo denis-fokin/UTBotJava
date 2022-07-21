@@ -229,6 +229,7 @@ class TestCodeGeneratorPipeline(private val testFrameworkConfiguration: TestFram
         val codeGenerator = with(testFrameworkConfiguration) {
             CodeGenerator(
                 classUnderTest.java,
+                codegenUtilsLibraryUsed = TODO("check if codegen-utils library is in the classpath"),
                 params = params,
                 testFramework = testFramework,
                 staticsMocking = staticsMocking,

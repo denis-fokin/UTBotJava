@@ -79,7 +79,6 @@ import org.utbot.framework.codegen.model.tree.toStatement
 import org.utbot.framework.codegen.model.util.at
 import org.utbot.framework.codegen.model.util.canBeSetIn
 import org.utbot.framework.codegen.model.util.equalTo
-import org.utbot.framework.codegen.model.util.get
 import org.utbot.framework.codegen.model.util.inc
 import org.utbot.framework.codegen.model.util.isAccessibleFrom
 import org.utbot.framework.codegen.model.util.isInaccessible
@@ -1092,7 +1091,10 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                     emptyLineIfNeeded()
 
                     actual = newVar(
-                        CgClassId(executable.returnType, isNullable = result is UtNullModel),
+                        // TODO: here we were using executableId.returnType,
+                        // TODO: but that made it impossible to access actual result type fields without reflection
+//                        CgClassId(executable.returnType, isNullable = result is UtNullModel),
+                        CgClassId(result.classId, isNullable = result is UtNullModel),
                         "actual"
                     ) {
                         thisInstance[executable](*methodArguments.toTypedArray())

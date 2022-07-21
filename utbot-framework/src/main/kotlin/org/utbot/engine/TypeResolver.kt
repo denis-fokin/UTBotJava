@@ -202,6 +202,9 @@ class TypeResolver(private val typeRegistry: TypeRegistry, private val hierarchy
         val leastCommonSootClass = (leastCommonType as? RefType)?.sootClass
         val keepArtificialEntities = leastCommonSootClass?.isArtificialEntity == true
 
+        // TODO: remove this workaround reason, because now it is not a workaround.
+        // Now we support lambdas, but only when they are the only option.
+        // Remove this workaround everywhere in the code.
         heuristic(WorkaroundReason.REMOVE_ANONYMOUS_CLASSES) {
             possibleConcreteTypes.forEach {
                 val sootClass = (it.baseType as? RefType)?.sootClass ?: run {
@@ -211,7 +214,13 @@ class TypeResolver(private val typeRegistry: TypeRegistry, private val hierarchy
                 }
                 when {
                     sootClass.isAnonymous || sootClass.isUtMock -> unwantedTypes += it
-                    sootClass.isArtificialEntity -> if (keepArtificialEntities) concreteTypes += it else Unit
+                    sootClass.isArtificialEntity -> {
+                        if (sootClass.isLambda) {
+                            unwantedTypes += it
+                        } else if (keepArtificialEntities) {
+                            concreteTypes += it
+                        }
+                    }
                     workaround(WorkaroundReason.HACK) { leastCommonSootClass == OBJECT_TYPE && sootClass.isOverridden } -> Unit
                     else -> concreteTypes += it
                 }

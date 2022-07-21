@@ -40,6 +40,7 @@ interface CgElement {
             is CgExecutableUnderTestCluster -> visit(element)
             is CgUtilMethod -> visit(element)
             is CgTestMethod -> visit(element)
+            is CgCustomMethod -> visit(element)
             is CgErrorTestMethod -> visit(element)
             is CgParameterizedTestDataProviderMethod -> visit(element)
             is CgCommentedAnnotation -> visit(element)
@@ -214,6 +215,30 @@ class CgTestMethod(
     override val documentation: CgDocumentationComment = CgDocumentationComment(emptyList()),
     override val requiredFields: List<CgParameterDeclaration> = emptyList(),
 ) : CgMethod(false)
+
+/**
+ * This class represents any custom method that we may want to create in the test class.
+ * It may be some auxilliary method that by some reason has to be inside the test class.
+ *
+ * Note that before there was a class CgUtilMethod (now removed) that represented util methods,
+ * but now all util methods have been moved into a separate library
+ * in order to make the test class cleaner.
+ *
+ * So, use [CgCustomMethod] only if this method absolutely has to be in the test class.
+ * If it doesn't, consider adding your method to util methods library instead.
+ * This library sources can be found in the module `utbot-codegen-utils`.
+ */
+class CgCustomMethod(
+    override val name: String,
+    override val returnType: ClassId,
+    override val parameters: List<CgParameterDeclaration>,
+    override val statements: List<CgStatement>,
+    override val exceptions: Set<ClassId>,
+    override val annotations: List<CgAnnotation>,
+    isStatic: Boolean,
+    override val documentation: CgDocumentationComment = CgDocumentationComment(emptyList()),
+    override val requiredFields: List<CgParameterDeclaration> = emptyList(),
+) : CgMethod(isStatic)
 
 class CgErrorTestMethod(
     override val name: String,
@@ -556,10 +581,32 @@ class CgThisInstance(override val type: ClassId) : CgValue
 
 // Variables
 
+/**
+ * @property name name of the variable
+ * @property compileTimeType type a variable was declared with in the code.
+ * For example, `List<Integer>` in `List<Integer> l = new ArrayList<>();`.
+ * @property runtimeType actual type of an object stored in the variable.
+ * For example, `ArrayList<Integer>` in `List<Integer> l = new ArrayList<>();`.
+ */
 open class CgVariable(
     val name: String,
-    override val type: ClassId,
+    val compileTimeType: ClassId,
+    val runtimeType: ClassId
 ) : CgValue {
+
+    /**
+     * If [compileTimeType] and [runtimeType] are the same, a variable may be declared with this constructor.
+     */
+    constructor(name: String, type: ClassId) : this(name, type, type)
+
+    /**
+     * Property [type] inherited from [CgExpression] is delegated to [compileTimeType].
+     * That's because when we access a variable in the code we can only work with it
+     * through its compileTimeType interface, not knowing about its concrete implementation (runtime type).
+     */
+    override val type: ClassId
+        get() = compileTimeType
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -584,11 +631,10 @@ open class CgVariable(
 }
 
 /**
- * A variable with explicit not null annotation if this is required in language.
+ * If expression is a variable, then this is a variable
+ * with explicit not null annotation if this is required in language.
  *
- * Note:
- * - in Java it is an equivalent of [CgVariable]
- * - in Kotlin the difference is in addition of "!!" to the name
+ * In Kotlin the difference is in addition of "!!" to the expression
  */
 class CgNotNullAssertion(val expression: CgExpression) : CgValue {
     override val type: ClassId

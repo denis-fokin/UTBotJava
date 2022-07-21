@@ -31,6 +31,7 @@ import org.utbot.framework.plugin.api.util.longClassId
 import org.utbot.framework.plugin.api.util.method
 import org.utbot.framework.plugin.api.util.primitiveTypeJvmNameOrNull
 import org.utbot.framework.plugin.api.util.shortClassId
+import org.utbot.framework.plugin.api.util.supertypeOfAnonymousClass
 import org.utbot.framework.plugin.api.util.toReferenceTypeBytecodeSignature
 import org.utbot.framework.plugin.api.util.voidClassId
 import soot.ArrayType
@@ -464,6 +465,25 @@ data class UtAssembleModel(
     }
 }
 
+// TODO: should lambda be a reference model?
+/**
+ * Model for lambdas.
+ *
+ * Lambdas in Java represent the implementation of a single abstract method (SAM) of a functional interface.
+ * They can be used to create an instance of said functional interface, but **they are not classes**.
+ * In Java lambdas are compiled into synthetic methods of a class they are declared in.
+ * Depending on the captured variables, this method will be either static or non-static.
+ *
+ * Since lambdas are not classes we cannot use a class loader to get info about them as we can do for other models.
+ * Hence the necessity for this specific lambda model that will be processed differently: instead of working
+ * with a class we will be working with the synthetic method that represents our lambda.
+ */
+// TODO: what about support for Kotlin lambdas (they are not exactly the same as Java's due to functional types)
+class UtLambdaModel(
+    override val id: Int?,
+    override val classId: ClassId,
+) : UtReferenceModel(id, classId)
+
 /**
  * Model for a step to obtain [UtAssembleModel].
  */
@@ -632,8 +652,14 @@ open class ClassId @JvmOverloads constructor(
      */
     val prettifiedName: String
         get() {
-            val className = jClass.canonicalName ?: name // Explicit jClass reference to get null instead of exception
-            return className
+            val baseName = when {
+                // anonymous classes have empty simpleName and their canonicalName is null,
+                // so we create a specific name for them
+                isAnonymous -> "Anonymous${supertypeOfAnonymousClass.prettifiedName}"
+                // in other cases where canonical name is still null, we use ClassId.name instead
+                else -> jClass.canonicalName ?: name // Explicit jClass reference to get null instead of exception
+            }
+            return baseName
                 .substringAfterLast(".")
                 .replace(Regex("[^a-zA-Z0-9]"), "")
                 .let { if (this.isArray) it + "Array" else it }
