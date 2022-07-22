@@ -34,7 +34,7 @@ object JsDialogProcessor {
         val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
         if (!dialogProcessor.showAndGet()) return
 
-        createTests(project, dialogProcessor.model)
+        createTests(dialogProcessor.model)
     }
 
     private fun createDialog(
@@ -56,9 +56,10 @@ object JsDialogProcessor {
         )
     }
 
-    private fun createTests(project: Project, model: JsTestsModel) {
+    private fun createTests(model: JsTestsModel) {
         model.selectedMethods?.forEach { jsMemberInfo ->
             val funcNode = getFunctionNode(jsMemberInfo)
+            //TODO: think of JsClassId("debug") and jsUndefinedClassId usages
             val execId = MethodId(
                 JsClassId("debug"),
                 funcNode.name.toString(),
@@ -73,15 +74,15 @@ object JsDialogProcessor {
             }
             val fuzzedValues =
                 jsFuzzing(method = funcNode, methodUnderTestDescription = methodUnderTestDescription).toList()
-            //For dev purposes only first set of fuzzed values is picked. TODO: patch this later
-            val params = getRandomNumFuzzedValues(fuzzedValues)
+            //For dev purposes only random set of fuzzed values is picked. TODO: patch this later
+            val randomParams = getRandomNumFuzzedValues(fuzzedValues)
             val testsForGenerator = mutableListOf<Sequence<*>>()
-            params.forEach { param ->
+            randomParams.forEach { param ->
                 val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
 //                val testCodeGen = JsTestCodeGenerator.generateTestCode(funcNode, param, JsPrimitiveModel(returnValue))
                 // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
                 // Hack: Should create one file with all fun to compile?
-                val b = testsForGenerator.add(
+                testsForGenerator.add(
                     ModelBasedNameSuggester().suggest(
                         methodUnderTestDescription,
                         param,
