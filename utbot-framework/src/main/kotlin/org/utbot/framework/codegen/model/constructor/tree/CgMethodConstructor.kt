@@ -1004,18 +1004,25 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                         } else {
                             // array of objects, have to use deep equals
 
-                            if (expected is CgLiteral) {
-                                // Literal can only be Primitive or String, can use equals here
-                                testFrameworkManager.assertEquals(expected, actual)
-                                return
+                            when (expected) {
+                                is CgLiteral -> {
+                                    // Literal can only be Primitive or String, can use equals here
+                                    testFrameworkManager.assertEquals(expected, actual)
+                                }
+                                is CgNotNullAssertion -> {
+                                    require(expected.expression is CgVariable) {
+                                        "Only Variable wrapped in CgNotNullAssertion is supported in deep equals"
+                                    }
+                                    generateDeepEqualsOrNullAssertion(expected.expression, actual)
+                                }
+                                else -> {
+                                    require(resultModel is UtArrayModel) {
+                                        "Result model have to be UtArrayModel to generate arrays assertion " +
+                                                "but `${resultModel::class}` found"
+                                    }
+                                    generateDeepEqualsOrNullAssertion(expected, actual)
+                                }
                             }
-
-                            require(resultModel is UtArrayModel) {
-                                "Result model have to be UtArrayModel to generate arrays assertion " +
-                                        "but `${resultModel::class}` found"
-                            }
-
-                            generateDeepEqualsOrNullAssertion(expected, actual)
                         }
                     }
                 }
@@ -1054,7 +1061,7 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
                             require(expected.expression is CgVariable) {
                                 "Only Variable wrapped in CgNotNullAssertion is supported in deep equals"
                             }
-                            currentBlock = currentBlock.addAll(generateDeepEqualsAssertion(expected.expression, actual))
+                            generateDeepEqualsOrNullAssertion(expected.expression, actual)
                         }
                         else -> generateDeepEqualsOrNullAssertion(expected, actual)
                     }
