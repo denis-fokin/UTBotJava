@@ -11,18 +11,18 @@ import org.utbot.fuzzer.FuzzedConcreteValue
 import org.utbot.fuzzer.FuzzedOp
 
 object JsAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
-    var lastFuzzedOpGlobal = FuzzedOp.NONE
+    private var lastFuzzedOpGlobal = FuzzedOp.NONE
     val fuzzedConcreteValues = mutableSetOf<FuzzedConcreteValue>()
 
     override fun enterBinaryNode(binaryNode: BinaryNode?): Boolean {
-        binaryNode?.let {
+        binaryNode?.let { binaryNode ->
             val compOp = """>=|<=|>|<|==|!=""".toRegex()
             val curOp = compOp.find(binaryNode.toString())?.value
             val currentFuzzedOp = FuzzedOp.values().find { curOp == it.sign } ?: FuzzedOp.NONE
             lastFuzzedOpGlobal = currentFuzzedOp
-            validateNode(it.lhs)
+            validateNode(binaryNode.lhs)
             lastFuzzedOpGlobal = lastFuzzedOpGlobal.reverseOrElse { FuzzedOp.NONE }
-            validateNode(it.rhs)
+            validateNode(binaryNode.rhs)
         }
         return false
     }
@@ -48,7 +48,7 @@ object JsAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
                     )
                 )
             }
-            is Integer -> {
+            is Int -> {
                 fuzzedConcreteValues.add(FuzzedConcreteValue(jsIntClassId, literalNode.value, lastFuzzedOpGlobal))
             }
             is Long -> {
