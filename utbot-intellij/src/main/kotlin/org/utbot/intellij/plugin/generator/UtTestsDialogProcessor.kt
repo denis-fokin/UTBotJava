@@ -248,7 +248,7 @@ object UtTestsDialogProcessor {
             }
     }
 
-    private fun errorMessage(className: String?, timeout: Long) = buildString {
+    private fun errorMessage(className: String?, timeout: Long) = buildstring {
         appendLine("UtBot failed to generate any test cases for class $className.")
         appendLine()
         appendLine("Try to alter test generation configuration, e.g. enable mocking and static mocking.")

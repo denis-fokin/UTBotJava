@@ -100,13 +100,15 @@ object JsActionMethods {
         filteredMethods.forEach {
             strBuilder += it.text
         }
+        //Creating a class that "can't" exist.
+        //Needs further testing if such class exists in user's code.
         return "class askfajsghalwig {$strBuilder}"
     }
 
     /*
         Small hack: generating a string source code of an "impossible" class in order to
         generate a PsiFile with it, then extract ES6Class from it, then extract MemberInfos.
-        Created for top-level functions, but used even if a functions is a method of a class.
+        Created for top-level functions that don't have a parent class.
      */
     private fun generateMemberInfo(project: Project, methods: List<JSFunction>): Set<JSMemberInfo> {
         val strClazz = buildClassStringFromMethods(methods)
