@@ -1,5 +1,7 @@
 package org.utbot.intellij.plugin.js
 
+import com.android.tools.idea.gradle.structure.model.meta.annotateWithError
+import com.intellij.javascript.microservices.jsPksParser
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
@@ -73,12 +75,12 @@ object JsDialogProcessor {
             }
             val fuzzedValues =
                 jsFuzzing(method = funcNode, methodUnderTestDescription = methodUnderTestDescription).toList()
-            //For dev purposes only first set of fuzzed values is picked. TODO: patch this later
-            val params = getRandomNumFuzzedValues(fuzzedValues)
+            // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
+            // Hack: Should create one file with all fun to compile?
+            val params = getRandomNumFuzzedValues(fuzzedValues, 10)
             val testsForGenerator = mutableListOf<Sequence<*>>()
             params.forEach { param ->
                 val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
-//                val testCodeGen = JsTestCodeGenerator.generateTestCode(funcNode, param, JsPrimitiveModel(returnValue))
                 testsForGenerator.add(
                     ModelBasedNameSuggester().suggest(
                         methodUnderTestDescription,
@@ -90,9 +92,9 @@ object JsDialogProcessor {
         }
     }
 
-    private fun getRandomNumFuzzedValues(fuzzedValues: List<List<FuzzedValue>>): List<List<FuzzedValue>> {
+    private fun getRandomNumFuzzedValues(fuzzedValues: List<List<FuzzedValue>>, n: Int): List<List<FuzzedValue>> {
         val newFuzzedValues = mutableListOf<List<FuzzedValue>>()
-        for (i in 0..10) {
+        repeat(n) {
             newFuzzedValues.add(fuzzedValues[Random.nextInt(fuzzedValues.size)])
         }
         return newFuzzedValues
