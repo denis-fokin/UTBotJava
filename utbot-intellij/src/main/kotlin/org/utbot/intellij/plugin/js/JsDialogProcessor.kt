@@ -11,11 +11,17 @@ import com.oracle.js.parser.ir.FunctionNode
 import com.oracle.js.parser.ir.VarNode
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
-import org.utbot.framework.plugin.api.JsPrimitiveModel
+import org.utbot.framework.plugin.api.*
+import org.utbot.framework.plugin.api.util.jsUndefinedClassId
+import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
+import org.utbot.fuzzer.names.ModelBasedNameSuggester
 import org.utbot.intellij.plugin.js.codegen.JsTest
+import org.utbot.intellij.plugin.js.codegen.JsTestCodeGenerator
+import org.utbot.intellij.plugin.js.fuzzer.JsAstVisitor
 import org.utbot.intellij.plugin.js.fuzzer.jsFuzzing
 import org.utbot.intellij.plugin.ui.utils.testModule
+import kotlin.random.Random
 
 object JsDialogProcessor {
 
@@ -51,14 +57,45 @@ object JsDialogProcessor {
     }
 
     private fun createTests(project: Project, model: JsTestsModel) {
-        model.selectedMethods?.forEach {
-            val funcNode = getFunctionNode(it)
-            val fuzzedValues = jsFuzzing(method = funcNode).toList()
+        model.selectedMethods?.forEach { jsMemberInfo ->
+            val funcNode = getFunctionNode(jsMemberInfo)
+            val execId = MethodId(
+                JsClassId("debug"),
+                funcNode.name.toString(),
+                jsUndefinedClassId,
+                funcNode.parameters.toList().map { jsUndefinedClassId }
+            )
+            funcNode.body.accept(JsAstVisitor)
+            val methodUnderTestDescription = FuzzedMethodDescription(execId, JsAstVisitor.fuzzedConcreteValues).apply {
+                compilableName = funcNode.name.toString()
+                val names = funcNode.parameters.map { it.name.toString() }
+                parameterNameMap = { index -> names.getOrNull(index) }
+            }
+            val fuzzedValues =
+                jsFuzzing(method = funcNode, methodUnderTestDescription = methodUnderTestDescription).toList()
             //For dev purposes only first set of fuzzed values is picked. TODO: patch this later
-            val params = fuzzedValues.first()
-            val returnValue = runJs(params, funcNode, it.member.text)
-            val jsTest = JsTest(funcNode, params, JsPrimitiveModel(returnValue))
+            val params = getRandomNumFuzzedValues(fuzzedValues)
+            val testsForGenerator = mutableListOf<Sequence<*>>()
+            params.forEach { param ->
+                val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
+//                val testCodeGen = JsTestCodeGenerator.generateTestCode(funcNode, param, JsPrimitiveModel(returnValue))
+                testsForGenerator.add(
+                    ModelBasedNameSuggester().suggest(
+                        methodUnderTestDescription,
+                        param,
+                        UtExecutionSuccess(JsPrimitiveModel(returnValue))
+                    )
+                )
+            }
         }
+    }
+
+    private fun getRandomNumFuzzedValues(fuzzedValues: List<List<FuzzedValue>>): List<List<FuzzedValue>> {
+        val newFuzzedValues = mutableListOf<List<FuzzedValue>>()
+        for (i in 0..10) {
+            newFuzzedValues.add(fuzzedValues[Random.nextInt(fuzzedValues.size)])
+        }
+        return newFuzzedValues
     }
 
     private fun runJs(fuzzedValues: List<FuzzedValue>, method: FunctionNode, funcString: String): Value {
