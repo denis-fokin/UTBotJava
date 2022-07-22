@@ -9,8 +9,8 @@ import org.utbot.framework.codegen.JUNIT5_PARAMETERIZED_PACKAGE
 import org.utbot.framework.codegen.Junit4
 import org.utbot.framework.codegen.Junit5
 import org.utbot.framework.codegen.ParametrizedTestSource
+import org.utbot.framework.codegen.*
 import org.utbot.framework.codegen.RuntimeExceptionTestsBehaviour.PASS
-import org.utbot.framework.codegen.TestNg
 import org.utbot.framework.codegen.model.constructor.builtin.closeMethodIdOrNull
 import org.utbot.framework.codegen.model.constructor.builtin.forName
 import org.utbot.framework.codegen.model.constructor.builtin.getClass
@@ -227,10 +227,8 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
             val fieldAccessible = field.isAccessibleFrom(testClassPackageName)
 
             // prevValue is nullable if not accessible because of getStaticFieldValue(..) : Any?
-            val prevValue = newVar(
-                CgClassId(field.type, isNullable = !fieldAccessible),
-                "prev${field.name.capitalize()}"
-            ) {
+            val prevValue = newVar(CgClassId(field.type, isNullable = !fieldAccessible),
+                "prev${field.name.capitalize()}") {
                 if (fieldAccessible) {
                     declaringClass[field]
                 } else {
