@@ -2,6 +2,8 @@ package org.utbot.intellij.plugin.js
 
 import com.intellij.lang.javascript.refactoring.ui.JSMemberSelectionTable
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
@@ -37,8 +39,8 @@ class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
 
     init {
         title = "Generate tests with UtBot"
-        initTestFrameworkPresenceThread = thread {
-            TestFramework.allItems.forEach {
+        initTestFrameworkPresenceThread = thread(start = true) {
+            TestFramework.allJsItems.forEach {
                 it.isInstalled = findFrameworkLibrary(it.displayName.toLowerCase())
             }
         }
@@ -92,7 +94,7 @@ class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
     private fun configureTestFramework() {
         val selectedTestFramework = testFrameworks.item
         selectedTestFramework.isInstalled = true
-        val packageInstallBuilder = ProcessBuilder("cmd.exe", "/c", "npm install ${selectedTestFramework.displayName.toLowerCase()}")
+        val packageInstallBuilder = ProcessBuilder("cmd.exe", "/c", "npm install -l ${selectedTestFramework.displayName.toLowerCase()}")
         val packageInstallProcess = packageInstallBuilder.start()
         packageInstallProcess.waitFor()
     }
@@ -101,7 +103,13 @@ class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
         initTestFrameworkPresenceThread.join()
         val frameworkNotInstalled = !testFrameworks.item.isInstalled
         if (frameworkNotInstalled && createTestFrameworkNotificationDialog() == Messages.YES) {
-            configureTestFramework()
+            (object : Task.Backgroundable(model.project, "Install test framework package") {
+                override fun run(indicator: ProgressIndicator) {
+                    indicator.text = "Installing ${testFrameworks.item.displayName} npm package"
+                    configureTestFramework()
+                }
+
+            }).queue()
         }
     }
 
@@ -115,27 +123,20 @@ class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
     )
 
     private fun findFrameworkLibrary(npmPackageName: String): Boolean {
-        val nodeBuilder = ProcessBuilder("cmd.exe", "/c", "npm -v")
+        val nodeBuilder = ProcessBuilder("cmd.exe", "/c", "npm list")
         val nodeProcess = nodeBuilder.start()
-        val nodeBufferedReader = nodeProcess.inputStream.bufferedReader()
-        if (nodeBufferedReader.readLine() == null) {
+        val bufferedReader = nodeProcess.inputStream.bufferedReader()
+        val checkForPackageText = bufferedReader.readText()
+        bufferedReader.close()
+        if (checkForPackageText == "") {
+            Messages.showErrorDialog(
+                model.project,
+                "Node.js is not installed",
+                title,
+            )
             return false
         }
-        nodeBufferedReader.close()
-        val localBuilder = ProcessBuilder("cmd.exe", "/c", "npm list -l")
-        val localProcess = localBuilder.start()
-        val localBufferedReader = localProcess.inputStream.bufferedReader()
-        val checkForPackageLocallyText = localBufferedReader.readText()
-        if (!checkForPackageLocallyText.contains(npmPackageName)) {
-            val globalBuilder = ProcessBuilder("cmd.exe", "/c", "npm list -g")
-            val globalProcess = globalBuilder.start()
-            val globalBufferedReader = globalProcess.inputStream.bufferedReader()
-            val checkForPackageGloballyText = globalBufferedReader.readText()
-            if (!checkForPackageGloballyText.contains(npmPackageName)) {
-                return false
-            }
-        }
-        return true
+        return checkForPackageText.contains(npmPackageName)
     }
 
     private fun checkMembers(members: Collection<JSMemberInfo>) = members.forEach { it.isChecked = true }

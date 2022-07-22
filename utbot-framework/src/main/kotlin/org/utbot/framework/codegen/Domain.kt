@@ -218,6 +218,7 @@ sealed class TestFramework(
     companion object : CodeGenerationSettingBox {
         override val defaultItem: TestFramework get() = Junit5
         override val allItems: List<TestFramework> get() = listOf(Junit4, Junit5, TestNg)
+        val allJsItems: List<TestFramework> get() = listOf(Mocha)
         val parametrizedDefaultItem: TestFramework get() = Junit5
     }
 }
