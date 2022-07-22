@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js.codegen
+package codegen
 
 import com.oracle.js.parser.ir.FunctionNode
 import org.utbot.framework.plugin.api.JsUtModel

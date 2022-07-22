@@ -1,0 +1,31 @@
+apply from: "${parent.projectDir}/gradle/include/jvm-project.gradle"
+
+group 'org.utbot'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation(project(":utbot-framework")) { exclude group: 'org.slf4j', module: 'slf4j-api' }
+    implementation(project(":utbot-fuzzers"))
+    // https://mvnrepository.com/artifact/org.graalvm.js/js
+    implementation group: 'org.graalvm.js', name: 'js', version: '22.1.0.1'
+
+    // https://mvnrepository.com/artifact/org.graalvm.js/js-scriptengine
+    implementation group: 'org.graalvm.js', name: 'js-scriptengine', version: '22.1.0.1'
+
+    // https://mvnrepository.com/artifact/org.graalvm.truffle/truffle-api
+    implementation group: 'org.graalvm.truffle', name: 'truffle-api', version: '22.1.0.1'
+
+    // https://mvnrepository.com/artifact/org.graalvm.sdk/graal-sdk
+    implementation group: 'org.graalvm.sdk', name: 'graal-sdk', version: '22.1.0.1'
+
+}
+
+test {
+    useJUnitPlatform()
+}

@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js
+package org.utbot.intellij.plugin.ui
 
 import com.intellij.lang.javascript.refactoring.ui.JSMemberSelectionTable
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
@@ -14,6 +14,7 @@ import com.intellij.util.ui.JBUI
 import org.utbot.framework.codegen.Mocha
 import org.utbot.framework.codegen.TestFramework
 import org.utbot.framework.plugin.api.CodeGenerationSettingItem
+import org.utbot.intellij.plugin.models.JsTestsModel
 import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
 import java.awt.BorderLayout
 import javax.swing.DefaultComboBoxModel

@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js.fuzzer.providers
+package fuzzer.providers
 
 import org.utbot.framework.plugin.api.JsPrimitiveModel
 import org.utbot.framework.plugin.api.util.isPrimitive

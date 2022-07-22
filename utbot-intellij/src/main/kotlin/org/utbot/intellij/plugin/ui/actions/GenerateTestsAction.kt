@@ -16,12 +16,10 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.util.classMembers.MemberInfo
 import com.intellij.testIntegration.TestIntegrationUtils
-import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.idea.core.getPackage
 import org.jetbrains.kotlin.idea.core.util.toPsiDirectory
 import org.jetbrains.kotlin.idea.core.util.toPsiFile
 import org.jetbrains.kotlin.psi.KtClass
-import org.utbot.intellij.plugin.js.JsActionMethods
 import java.util.*
 
 class GenerateTestsAction : AnAction() {

@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js.fuzzer
+package fuzzer
 
 import com.oracle.js.parser.ir.BinaryNode
 import com.oracle.js.parser.ir.LexicalContext

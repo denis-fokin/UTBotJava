@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js
+package org.utbot.intellij.plugin.models
 
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module

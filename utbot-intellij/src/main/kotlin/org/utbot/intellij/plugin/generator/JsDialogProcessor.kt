@@ -1,7 +1,5 @@
-package org.utbot.intellij.plugin.js
+package org.utbot.intellij.plugin.generator
 
-import com.android.tools.idea.gradle.structure.model.meta.annotateWithError
-import com.intellij.javascript.microservices.jsPksParser
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
@@ -11,6 +9,8 @@ import com.oracle.js.parser.ScriptEnvironment
 import com.oracle.js.parser.Source
 import com.oracle.js.parser.ir.FunctionNode
 import com.oracle.js.parser.ir.VarNode
+import fuzzer.JsAstVisitor
+import fuzzer.JsFuzzer.jsFuzzing
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
 import org.utbot.framework.plugin.api.*
@@ -18,10 +18,8 @@ import org.utbot.framework.plugin.api.util.jsUndefinedClassId
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.names.ModelBasedNameSuggester
-import org.utbot.intellij.plugin.js.codegen.JsTest
-import org.utbot.intellij.plugin.js.codegen.JsTestCodeGenerator
-import org.utbot.intellij.plugin.js.fuzzer.JsAstVisitor
-import org.utbot.intellij.plugin.js.fuzzer.jsFuzzing
+import org.utbot.intellij.plugin.ui.JsDialogWindow
+import org.utbot.intellij.plugin.models.JsTestsModel
 import org.utbot.intellij.plugin.ui.utils.testModule
 import kotlin.random.Random
 

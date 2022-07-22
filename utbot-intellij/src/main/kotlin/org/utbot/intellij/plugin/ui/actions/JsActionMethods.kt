@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.js
+package org.utbot.intellij.plugin.ui.actions
 
 import com.intellij.lang.Language
 import com.intellij.lang.ecmascript6.psi.ES6Class
@@ -16,6 +16,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.util.projectStructure.module
+import org.utbot.intellij.plugin.generator.JsDialogProcessor
 
 object JsActionMethods {
 
