@@ -24,7 +24,6 @@ object JsAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
             lastFuzzedOpGlobal = lastFuzzedOpGlobal.reverseOrElse { FuzzedOp.NONE }
             validateNode(it.rhs)
         }
-
         return false
     }
 
