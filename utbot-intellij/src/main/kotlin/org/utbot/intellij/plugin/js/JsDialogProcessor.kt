@@ -75,28 +75,26 @@ object JsDialogProcessor {
             }
             val fuzzedValues =
                 jsFuzzing(method = funcNode, methodUnderTestDescription = methodUnderTestDescription).toList()
-<<<<<<< HEAD
             //For dev purposes only first set of fuzzed values is picked. TODO: patch this later
             val params = getRandomNumFuzzedValues(fuzzedValues)
             val testsForGenerator = mutableListOf<Sequence<*>>()
             params.forEach { param ->
                 val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
 //                val testCodeGen = JsTestCodeGenerator.generateTestCode(funcNode, param, JsPrimitiveModel(returnValue))
-=======
-            // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
-            // Hack: Should create one file with all fun to compile?
-            val params = getRandomNumFuzzedValues(fuzzedValues, 10)
-            val testsForGenerator = mutableListOf<Sequence<*>>()
-            params.forEach { param ->
-                val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
->>>>>>> bf637e333a6f8741c4a9c06a73f3034c4ba6fb29
-                testsForGenerator.add(
-                    ModelBasedNameSuggester().suggest(
-                        methodUnderTestDescription,
-                        param,
-                        UtExecutionSuccess(JsPrimitiveModel(returnValue))
+                // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
+                // Hack: Should create one file with all fun to compile?
+                val params = getRandomNumFuzzedValues(fuzzedValues)
+                val testsForGenerator = mutableListOf<Sequence<*>>()
+                params.forEach { param ->
+                    val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
+                    testsForGenerator.add(
+                        ModelBasedNameSuggester().suggest(
+                            methodUnderTestDescription,
+                            param,
+                            UtExecutionSuccess(JsPrimitiveModel(returnValue))
+                        )
                     )
-                )
+                }
             }
         }
     }

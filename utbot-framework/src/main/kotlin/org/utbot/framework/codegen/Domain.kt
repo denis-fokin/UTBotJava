@@ -517,6 +517,15 @@ object Mocha : TestFramework("Mocha") {
     override val parameterizedTestAnnotationFqn = "Parameterized tests are not supported for Mocha"
     override val methodSourceAnnotation = "Parameterized tests are not supported for Mocha"
     override val methodSourceAnnotationFqn = "Parameterized tests are not supported for Mocha"
+    override fun getRunTestsCommand(
+        executionInvoke: String,
+        classPath: String,
+        classesNames: List<String>,
+        buildDirectory: String,
+        additionalArguments: List<String>
+    ): List<String> {
+        throw UnsupportedOperationException()
+    }
 
     override val testAnnotationId = BuiltinClassId(
         name = "Mocha",
@@ -527,48 +536,10 @@ object Mocha : TestFramework("Mocha") {
     override val parameterizedTestAnnotationId = jsUndefinedClassId
     override val methodSourceAnnotationId = jsUndefinedClassId
 
-    override fun getRunTestsCommand(
-        executionInvoke: String,
-        classPath: String,
-        classesNames: List<String>,
-        buildDirectory: String
-    ): List<String> {
-        throw UnsupportedOperationException()
-    }
 
 }
 
-object Mocha : TestFramework("Mocha") {
-    override val mainPackage = ""
-    override val assertionsClass = jsUndefinedClassId
-    override val arraysAssertionsClass = jsUndefinedClassId
-    override val testAnnotation = ""
-    override val testAnnotationFqn = ""
 
-    override val parameterizedTestAnnotation = "Parameterized tests are not supported for Mocha"
-    override val parameterizedTestAnnotationFqn = "Parameterized tests are not supported for Mocha"
-    override val methodSourceAnnotation = "Parameterized tests are not supported for Mocha"
-    override val methodSourceAnnotationFqn = "Parameterized tests are not supported for Mocha"
-
-    override val testAnnotationId = BuiltinClassId(
-        name = "Mocha",
-        canonicalName = "Mocha",
-        simpleName = "Test"
-    )
-
-    override val parameterizedTestAnnotationId = jsUndefinedClassId
-    override val methodSourceAnnotationId = jsUndefinedClassId
-
-    override fun getRunTestsCommand(
-        executionInvoke: String,
-        classPath: String,
-        classesNames: List<String>,
-        buildDirectory: String
-    ): List<String> {
-        throw UnsupportedOperationException()
-    }
-
-}
 
 enum class RuntimeExceptionTestsBehaviour(
     override val displayName: String,

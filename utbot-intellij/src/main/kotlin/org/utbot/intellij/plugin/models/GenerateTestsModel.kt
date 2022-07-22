@@ -12,6 +12,7 @@ import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.CodegenLanguage
 import org.utbot.framework.plugin.api.MockFramework
 import org.utbot.framework.plugin.api.MockStrategyApi
+import org.utbot.framework.util.ConflictTriggers
 import org.utbot.intellij.plugin.ui.utils.BaseTestsModel
 
 class GenerateTestsModel(
@@ -23,7 +24,7 @@ class GenerateTestsModel(
     var selectedMethods: Set<MemberInfo>?,
     var timeout: Long,
     var generateWarningsForStaticMocking: Boolean = false,
-    var fuzzingValue: Double = 0.05
+    var fuzzingValue: Double = 0.05,
     var forceMockHappened: Boolean = false,
     var forceStaticMockHappened: Boolean = false,
     var hasTestFrameworkConflict: Boolean = false,
