@@ -81,18 +81,13 @@ object JsDialogProcessor {
 //                val testCodeGen = JsTestCodeGenerator.generateTestCode(funcNode, param, JsPrimitiveModel(returnValue))
                 // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
                 // Hack: Should create one file with all fun to compile?
-                val params = getRandomNumFuzzedValues(fuzzedValues)
-                val testsForGenerator = mutableListOf<Sequence<*>>()
-                params.forEach { param ->
-                    val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
-                    testsForGenerator.add(
-                        ModelBasedNameSuggester().suggest(
-                            methodUnderTestDescription,
-                            param,
-                            UtExecutionSuccess(JsPrimitiveModel(returnValue))
-                        )
+                val b = testsForGenerator.add(
+                    ModelBasedNameSuggester().suggest(
+                        methodUnderTestDescription,
+                        param,
+                        UtExecutionSuccess(JsPrimitiveModel(returnValue))
                     )
-                }
+                )
             }
         }
     }
