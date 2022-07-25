@@ -568,7 +568,7 @@ open class JsClassId(private val jsName: String) : ClassId(jsName) {
         get() = jsName
 }
 
-class JsMultipleClassId(vararg jsNames: String) : JsClassId(jsNames.joinToString(separator = "|"))
+class JsMultipleClassId(private val jsJoinedName: String) : JsClassId(jsJoinedName)
 
 open class JsUtModel(
     override val classId: JsClassId
