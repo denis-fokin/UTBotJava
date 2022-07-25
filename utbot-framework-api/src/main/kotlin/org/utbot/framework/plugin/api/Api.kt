@@ -563,11 +563,12 @@ data class UtStaticMethodInstrumentation(
 ) : UtInstrumentation()
 
 
-class JsClassId(private val jsName: String) : ClassId(jsName) {
+open class JsClassId(private val jsName: String) : ClassId(jsName) {
     override val simpleName: String
         get() = jsName
 }
 
+class JsMultipleClassId(vararg jsNames: String) : JsClassId(jsNames.joinToString(separator = "|"))
 
 open class JsUtModel(
     override val classId: JsClassId
