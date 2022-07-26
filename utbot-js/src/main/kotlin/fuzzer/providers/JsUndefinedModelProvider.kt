@@ -1,5 +1,7 @@
 package fuzzer.providers
 
+import fuzzer.providers.JsPrimitivesModelProvider.MAX_INT
+import fuzzer.providers.JsPrimitivesModelProvider.MIN_INT
 import org.utbot.framework.plugin.api.JsPrimitiveModel
 import org.utbot.framework.plugin.api.util.jsUndefinedClassId
 import org.utbot.fuzzer.FuzzedMethodDescription
@@ -27,8 +29,8 @@ object JsUndefinedModelProvider : ModelProvider {
             JsPrimitiveModel(0).fuzzed { summary = "%var% = 0" },
             JsPrimitiveModel(-1).fuzzed { summary = "%var% < 0" },
             JsPrimitiveModel(1).fuzzed { summary = "%var% > 0" },
-            JsPrimitiveModel(9007199254740991).fuzzed { summary = "%var% = Integer.MAX_SAFE_VALUE" },
-            JsPrimitiveModel(-9007199254740991).fuzzed { summary = "%var% = Integer.MIN_SAFE_VALUE" },
+            JsPrimitiveModel(MAX_INT).fuzzed { summary = "%var% = Integer.MAX_SAFE_VALUE" },
+            JsPrimitiveModel(MIN_INT).fuzzed { summary = "%var% = Integer.MIN_SAFE_VALUE" },
 
             JsPrimitiveModel(0.0).fuzzed { summary = "%var% = 0.0" },
             JsPrimitiveModel(-1.0).fuzzed { summary = "%var% < 0.0" },

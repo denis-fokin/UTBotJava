@@ -59,12 +59,12 @@ object JsDialogProcessor {
     private fun createTests(model: JsTestsModel) {
         model.selectedMethods?.forEach { jsMemberInfo ->
             val funcNode = getFunctionNode(jsMemberInfo)
-            //TODO: think of JsClassId("debug") and jsUndefinedClassId usages
+            //TODO: think of jsUndefinedClassId usages
             val execId = MethodId(
-                JsClassId("debug"),
+                JsClassId(funcNode.name.toString()),
                 funcNode.name.toString(),
                 jsUndefinedClassId,
-                funcNode.parameters.toList().map { jsUndefinedClassId }
+                funcNode.parameters.toList().map { JsMultipleClassId("number|string") }
             )
             funcNode.body.accept(JsAstVisitor)
             val methodUnderTestDescription = FuzzedMethodDescription(execId, JsAstVisitor.fuzzedConcreteValues).apply {
@@ -73,7 +73,7 @@ object JsDialogProcessor {
                 parameterNameMap = { index -> names.getOrNull(index) }
             }
             val fuzzedValues =
-                jsFuzzing(method = funcNode, methodUnderTestDescription = methodUnderTestDescription).toList()
+                jsFuzzing(methodUnderTestDescription = methodUnderTestDescription).toList()
             //For dev purposes only random set of fuzzed values is picked. TODO: patch this later
             val randomParams = getRandomNumFuzzedValues(fuzzedValues)
             val testsForGenerator = mutableListOf<Sequence<*>>()

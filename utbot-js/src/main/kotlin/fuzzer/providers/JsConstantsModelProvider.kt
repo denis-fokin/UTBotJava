@@ -1,9 +1,9 @@
 package fuzzer.providers
 
+import org.utbot.framework.plugin.api.JsClassId
 import org.utbot.framework.plugin.api.JsPrimitiveModel
-import org.utbot.framework.plugin.api.util.isPrimitive
+import org.utbot.framework.plugin.api.util.isJsPrimitive
 import org.utbot.framework.plugin.api.util.jsUndefinedClassId
-import org.utbot.framework.plugin.api.util.toJsClassId
 import org.utbot.fuzzer.*
 
 object JsConstantsModelProvider : ModelProvider {
@@ -12,7 +12,7 @@ object JsConstantsModelProvider : ModelProvider {
         description.concreteValues
             .asSequence()
             .filter { (classId, _) ->
-                (classId.toJsClassId()).isPrimitive
+                (classId as JsClassId).isJsPrimitive
             }
             .forEach { (_, value, op) ->
                 sequenceOf(
@@ -33,7 +33,7 @@ object JsConstantsModelProvider : ModelProvider {
 
     @Suppress("DuplicatedCode")
 //  JsPrimitiveModel is used instead of UtPrimitiveModel TODO: Fix this later
-    private fun modifyValue(value: Any, op: FuzzedOp): FuzzedValue? {
+    internal fun modifyValue(value: Any, op: FuzzedOp): FuzzedValue? {
         if (!op.isComparisonOp()) return null
         val multiplier = if (op == FuzzedOp.LT || op == FuzzedOp.GE) -1 else 1
         return when (value) {
