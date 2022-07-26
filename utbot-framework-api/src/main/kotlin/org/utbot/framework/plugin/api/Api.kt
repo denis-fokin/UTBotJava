@@ -560,9 +560,23 @@ val ArrayType.id: ClassId
     }
 
 // TODO: rename into GoTypeId?
-class GoClassId(private val goName: String) : ClassId(goName) {
+sealed class GoClassId(private val goName: String) : ClassId(goName) {
     override val simpleName: String
         get() = goName
+
+    override fun toString(): String = goName
+}
+
+// GoClassId for most cases.
+class GoCommonClassId(
+    goName: String,
+    val correspondingKClass: KClass<out Any>? = null,
+    val isErrorType: Boolean = false
+): GoClassId(goName)
+
+// Wraps tuple of several classes into one GoClassId. It helps to handle return types of Go functions and methods.
+class GoSyntheticClassesTupleId(val classes: List<GoCommonClassId>): GoClassId("synthetic_classes_tuple") {
+    override fun toString(): String = classes.joinToString(separator = ", ", prefix = "(", postfix = ")")
 }
 
 open class GoUtModel(
@@ -571,7 +585,11 @@ open class GoUtModel(
 
 data class GoUtPrimitiveModel(
     val value: Any,
-) : GoUtModel(primitiveModelValueToGoClassId(value)) {
+    override val classId: GoCommonClassId
+) : GoUtModel(classId) {
+
+    // TODO: get rid of this constructor to make models more precise
+    constructor(value: Any) : this(value, primitiveModelValueToGoClassId(value))
 
     override fun toString() =
         if (classId == goStringClassId) {
@@ -595,11 +613,14 @@ private fun primitiveModelValueToGoClassId(value: Any) = when (value) {
     else -> error("undefined class")
 }
 
-@Suppress("unused")
 class GoUtNullModel(
     classId: GoClassId
 ) : GoUtModel(classId) {
     override fun toString() = "nil"
+}
+
+fun nullableToGoUtModel(value: Any?, goCommonClassId: GoCommonClassId): GoUtModel {
+    return if(value == null)GoUtNullModel(goCommonClassId) else GoUtPrimitiveModel(value, goCommonClassId)
 }
 
 /**

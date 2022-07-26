@@ -1,33 +1,39 @@
 package org.utbot.framework.plugin.api.util
 
 import org.utbot.framework.plugin.api.GoClassId
+import org.utbot.framework.plugin.api.GoCommonClassId
 
 // TODO: check if types below corresponds to the full useful built-in Go types
 
-val goByteClassId = GoClassId("byte") // = uint8
-val goBoolClassId = GoClassId("bool")
+@Suppress("unused")
+val goErrorClassId = GoCommonClassId("error", isErrorType = true)
+@Suppress("unused")
+val goVoidClassId = GoCommonClassId("", Unit::class)
 
-val goComplex128ClassId = GoClassId("complex128")
-val goComplex64ClassId = GoClassId("complex64")
+val goByteClassId = GoCommonClassId("byte", UByte::class) // = uint8
+val goBoolClassId = GoCommonClassId("bool", Boolean::class)
 
-val goFloat32ClassId = GoClassId("float32")
-val goFloat64ClassId = GoClassId("float64")
+val goComplex128ClassId = GoCommonClassId("complex128")
+val goComplex64ClassId = GoCommonClassId("complex64")
 
-val goIntClassId = GoClassId("int")
-val goInt16ClassId = GoClassId("int16")
-val goInt32ClassId = GoClassId("int32")
-val goInt64ClassId = GoClassId("int64")
-val goInt8ClassId = GoClassId("int8")
+val goFloat32ClassId = GoCommonClassId("float32", Float::class)
+val goFloat64ClassId = GoCommonClassId("float64", Double::class)
 
-val goRuneClassId = GoClassId("rune") // = int32
-val goStringClassId = GoClassId("string")
+val goIntClassId = GoCommonClassId("int", Int::class)
+val goInt16ClassId = GoCommonClassId("int16", Short::class)
+val goInt32ClassId = GoCommonClassId("int32", Int::class)
+val goInt64ClassId = GoCommonClassId("int64", Long::class)
+val goInt8ClassId = GoCommonClassId("int8", Byte::class)
 
-val goUintClassId = GoClassId("uint")
-val goUint16ClassId = GoClassId("uint16")
-val goUint32ClassId = GoClassId("uint32")
-val goUint64ClassId = GoClassId("uint64")
-val goUint8ClassId = GoClassId("uint8")
-val goUintPtrClassId = GoClassId("uintptr")
+val goRuneClassId = GoCommonClassId("rune", Int::class) // = int32
+val goStringClassId = GoCommonClassId("string", String::class)
+
+val goUintClassId = GoCommonClassId("uint", UInt::class)
+val goUint16ClassId = GoCommonClassId("uint16", UShort::class)
+val goUint32ClassId = GoCommonClassId("uint32", UInt::class)
+val goUint64ClassId = GoCommonClassId("uint64", ULong::class)
+val goUint8ClassId = GoCommonClassId("uint8", UByte::class)
+val goUintPtrClassId = GoCommonClassId("uintptr", ULong::class)
 
 
 val goPrimitives = setOf(

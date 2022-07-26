@@ -1,10 +1,12 @@
 package org.utbot.go
 
 import org.utbot.framework.plugin.api.GoClassId
-import org.utbot.framework.plugin.api.GoUtModel
+import org.utbot.framework.plugin.api.GoCommonClassId
+import org.utbot.framework.plugin.api.GoSyntheticClassesTupleId
 import org.utbot.fuzzer.FuzzedConcreteValue
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
+import org.utbot.go.executor.GoUtExecutionResult
 import org.utbot.go.fuzzer.GoAstVisitor
 
 sealed class GoAstNode {
@@ -14,22 +16,32 @@ sealed class GoAstNode {
     }
 }
 
-// TODO: remove, it's temporary
-data class GoDummyNode(val text: String) : GoAstNode()
+data class GoFileNode(
+    val name: String,
+    val containingPackageName: String,
+    val containingPackagePath: String
+) : GoAstNode()
 
-data class GoFileNode(val name: String, val containingPackage: String) : GoAstNode()
+data class GoBodyNode(val text: String) : GoAstNode()
 
-data class GoFunctionOrMethodArgumentNode(val name: String, val type: GoClassId) : GoAstNode()
+data class GoFunctionOrMethodParameterNode(val name: String, val type: GoClassId) : GoAstNode()
 
 data class GoFunctionOrMethodNode(
     val name: String,
     val returnType: GoClassId,
-    val parameters: List<GoFunctionOrMethodArgumentNode>,
-    val body: GoAstNode,
+    val parameters: List<GoFunctionOrMethodParameterNode>,
+    val body: GoBodyNode,
     val containingFileNode: GoFileNode
 ) : GoAstNode() {
     val parametersNames get() = parameters.map { it.name }
     val parametersTypes get() = parameters.map { it.type }
+
+    val returnCommonTypes: List<GoCommonClassId>
+        get() = if (returnType is GoSyntheticClassesTupleId) {
+            returnType.classes
+        } else {
+            listOf(returnType as GoCommonClassId)
+        }
 }
 
 fun GoFunctionOrMethodNode.toFuzzedMethodDescription(concreteValues: Collection<FuzzedConcreteValue>) =
@@ -42,7 +54,7 @@ fun GoFunctionOrMethodNode.toFuzzedMethodDescription(concreteValues: Collection<
 data class GoFuzzedFunctionOrMethodTestCase(
     val functionOrMethodNode: GoFunctionOrMethodNode,
     val fuzzedParametersValues: List<FuzzedValue>,
-    val executionResultValue: GoUtModel,
+    val executionResult: GoUtExecutionResult,
 ) {
-    val containingPackage: String get() = functionOrMethodNode.containingFileNode.containingPackage
+    val containingPackagePath: String get() = functionOrMethodNode.containingFileNode.containingPackagePath
 }

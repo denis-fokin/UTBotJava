@@ -15,7 +15,10 @@ repositories {
 
 dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: kotlin_logging_version
+
     api project(':utbot-fuzzers')
 }
 

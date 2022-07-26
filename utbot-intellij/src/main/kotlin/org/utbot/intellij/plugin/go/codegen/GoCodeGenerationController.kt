@@ -1,4 +1,4 @@
-package org.utbot.intellij.plugin.go
+package org.utbot.intellij.plugin.go.codegen
 
 import com.intellij.codeInsight.CodeInsightUtil
 import com.intellij.openapi.application.runReadAction
@@ -12,12 +12,14 @@ import com.intellij.util.IncorrectOperationException
 import com.intellij.util.concurrency.AppExecutorUtil
 import org.jetbrains.kotlin.idea.util.application.invokeLater
 import org.utbot.framework.plugin.api.CodegenLanguage
-import org.utbot.framework.plugin.api.GoUtPrimitiveModel
 import org.utbot.go.GoFileNode
 import org.utbot.go.GoFuzzedFunctionOrMethodTestCase
+import org.utbot.go.codegen.GoSimpleCodeGenerator
+import org.utbot.intellij.plugin.go.GoTestsModel
 import org.utbot.intellij.plugin.ui.utils.showErrorDialogLater
 import java.io.File
 
+// TODO: get rid of IDEA plugin here and move to utbot-go module
 // This class is highly inspired by CodeGenerationController
 object GoCodeGenerationController {
     private enum class Target { THREAD_POOL, READ_ACTION, WRITE_ACTION, EDT_LATER }
@@ -26,7 +28,7 @@ object GoCodeGenerationController {
     @Suppress("unused")
     fun generateTestsFilesAndCodeSimply(testCasesByFile: Map<GoFileNode, List<GoFuzzedFunctionOrMethodTestCase>>) {
         testCasesByFile.keys.forEach { fileNode ->
-            val fileTestsString = generateTestFileCode(testCasesByFile[fileNode]!!)
+            val fileTestsString = GoSimpleCodeGenerator.generateTestFileCode(testCasesByFile[fileNode]!!)
             println("GENERATED TEST FOR FILE ${fileNode.name}:\n")
             println(fileTestsString) // TODO: create file and write each test into it
         }
@@ -74,7 +76,7 @@ object GoCodeGenerationController {
         //TODO: Use PsiDocumentManager.getInstance(model.project).getDocument(file)
         // if we don't want to open _all_ new files with tests in editor one-by-one
         run(Target.THREAD_POOL) {
-            val generatedTestsCode = generateTestFileCode(testCases)
+            val generatedTestsCode = GoSimpleCodeGenerator.generateTestFileCode(testCases)
             run(Target.EDT_LATER) {
                 run(Target.WRITE_ACTION) {
                     unblockDocument(testFile.project, editor.document)
@@ -93,49 +95,6 @@ object GoCodeGenerationController {
             commitDocument(document)
             doPostponedOperationsAndUnblockDocument(document)
         }
-    }
-
-    private fun generateTestFileCode(testCases: List<GoFuzzedFunctionOrMethodTestCase>): String {
-        val resultFileCode = StringBuilder()
-
-        val packageName = testCases.first().containingPackage
-        if (testCases.any { it.containingPackage != packageName }) {
-            error("Test cases of the file corresponds to different packages.")
-        }
-        resultFileCode.append("package $packageName\n\n")
-
-        resultFileCode.append("import(\n\t\"testing\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\n")
-
-        val testCasesByFunctionOrMethod = testCases.groupBy { it.functionOrMethodNode.name }
-        val generatedTestsFunctions = testCasesByFunctionOrMethod.keys.joinToString(separator = "\n\n") {
-            val functionOrMethodTestCases = testCasesByFunctionOrMethod[it]!!
-            functionOrMethodTestCases.toTestCodeString()
-        }
-        resultFileCode.append(generatedTestsFunctions)
-
-        return resultFileCode.toString()
-    }
-
-    private fun List<GoFuzzedFunctionOrMethodTestCase>.toTestCodeString(): String {
-        // TODO: handle methods case
-        val functionOrMethodNode = this.first().functionOrMethodNode
-        if (this.any { it.functionOrMethodNode.name != functionOrMethodNode.name }) {
-            error("Test cases for the function or method have different functionMethodNode-s.")
-        }
-        val testFunctionOrMethodName = "Test${functionOrMethodNode.name.capitalize()}"
-
-        val testBody = this.mapIndexed { index, testCase ->
-            val fuzzedParameters =
-                testCase.fuzzedParametersValues.joinToString(separator = ", ") {
-                    (it.model as GoUtPrimitiveModel).toString()
-                }
-            val actualValueDeclaration = "actual$index := ${functionOrMethodNode.name}($fuzzedParameters)"
-            val expectedValue = (testCase.executionResultValue as GoUtPrimitiveModel).value
-            val assertion = "assert.Equal(t, $expectedValue, actual$index)"
-            "\t$actualValueDeclaration\n\t$assertion"
-        }.joinToString(separator = "\n\n", prefix = "{\n", postfix = "\n}")
-
-        return "func $testFunctionOrMethodName(t *testing.T) $testBody"
     }
 
     private fun run(target: Target, runnable: Runnable) {

@@ -1,5 +1,6 @@
 package org.utbot.intellij.plugin.go
 
+import com.goide.execution.target.GoLanguageRuntimeConfiguration
 import com.goide.psi.GoFile
 import com.goide.psi.GoFunctionOrMethodDeclaration
 import com.intellij.openapi.application.invokeLater
@@ -9,9 +10,10 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.asJava.namedUnwrappedElement
-import org.utbot.framework.plugin.api.GoClassId
+import org.utbot.framework.plugin.api.GoCommonClassId
 import org.utbot.go.*
 import org.utbot.go.fuzzer.generateTestCases
+import org.utbot.intellij.plugin.go.codegen.GoCodeGenerationController
 import org.utbot.intellij.plugin.ui.utils.testModule
 import java.io.File
 
@@ -89,11 +91,42 @@ object GoDialogProcessor {
     private fun GoFunctionOrMethodDeclaration.toGoFunctionOrMethodNode(): GoFunctionOrMethodNode =
         GoFunctionOrMethodNode(
             this.name!!,
-            GoClassId(this.resultType.presentationText),
-            this.signature!!.parameters.parameterDeclarationList.map { paramDecl ->
-                GoFunctionOrMethodArgumentNode(paramDecl.namedUnwrappedElement!!.name!!, GoClassId(paramDecl.type!!.presentationText))
+            run {
+                // DEBUG
+                val unusedDebug = 5
+                val resultParameters = this.result?.parameters
+                val resultType = this.result?.type
+                println(
+                    "resultParams: ${
+                        resultParameters?.parameterDeclarationList?.mapNotNull {
+                            GoCommonClassId(it.type!!.presentationText)
+                        }
+                    }"
+                )
+                println("resultType: ${resultType?.presentationText}")
+                GoCommonClassId(this.resultType.presentationText)
             },
-            GoDummyNode(this.block!!.text),
-            GoFileNode(File(containingFile.name).nameWithoutExtension, containingFile.canonicalPackageName!!)
+            this.signature!!.parameters.parameterDeclarationList.map { paramDecl ->
+                GoFunctionOrMethodParameterNode(
+                    paramDecl.namedUnwrappedElement!!.name!!,
+                    GoCommonClassId(paramDecl.type!!.presentationText)
+                )
+            },
+            GoBodyNode(this.block!!.text),
+//            GoFileNode(File(containingFile.name).nameWithoutExtension, containingFile.canonicalPackageName!!)
+            run {
+                println(
+                    GoFileNode(
+                        File(containingFile.name).nameWithoutExtension,
+                        containingFile.canonicalPackageName!!,
+                        containingFile.containingDirectory!!.virtualFile.canonicalPath!!
+                    )
+                )
+                GoFileNode(
+                    File(containingFile.name).nameWithoutExtension,
+                    containingFile.canonicalPackageName!!,
+                    containingFile.containingDirectory!!.virtualFile.canonicalPath!!
+                )
+            }
         )
 }
