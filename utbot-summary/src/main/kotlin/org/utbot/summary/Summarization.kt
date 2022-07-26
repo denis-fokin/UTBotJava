@@ -24,6 +24,8 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import mu.KotlinLogging
+import org.utbot.summary.UtSummarySettings.USE_CUSTOM_JAVADOC_TAGS
+import org.utbot.summary.comment.CustomJavaDocCommentBuilder
 import soot.SootMethod
 
 private val logger = KotlinLogging.logger {}
@@ -143,7 +145,10 @@ class Summarization(val sourceFile: File?, val invokeDescriptions: List<InvokeDe
                 }
 
                 for (traceTags in clusterTraceTags.traceTags) {
-                    if (GENERATE_COMMENTS) {
+                    if (GENERATE_COMMENTS && USE_CUSTOM_JAVADOC_TAGS) {
+                        traceTags.execution.summary =
+                            CustomJavaDocCommentBuilder(traceTags, sootToAST).buildDocStatements(methodUnderTest)
+                    } else if (GENERATE_COMMENTS) {
                         traceTags.execution.summary =
                             SimpleCommentBuilder(traceTags, sootToAST).buildDocStmts(methodUnderTest)
                     }
