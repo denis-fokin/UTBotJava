@@ -100,7 +100,7 @@ object UtSettings {
      * Timeout for symbolic execution
      *
      */
-    var utBotGenerationTimeoutInMillis by getLongProperty(60000L)
+    var utBotGenerationTimeoutInMillis by getLongProperty(600000L)
 
     /**
      * Random seed in path selector.
@@ -140,7 +140,7 @@ object UtSettings {
      *
      * False by default, set it to true if debug visualization is needed.
      */
-    var useDebugVisualization by getBooleanProperty(false)
+    var useDebugVisualization by getBooleanProperty(true)
 
     /**
      * Set the value to true if you want to automatically copy the path of the

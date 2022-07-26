@@ -43,6 +43,7 @@ import org.utbot.framework.plugin.api.util.underlyingType
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentSet
 import org.utbot.framework.codegen.model.constructor.builtin.TestClassUtilMethodProvider
+import org.utbot.framework.plugin.api.util.supertypeOfAnonymousClass
 
 internal data class EnvironmentFieldStateCache(
     val thisInstance: FieldStateCache,

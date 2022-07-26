@@ -465,6 +465,25 @@ data class UtAssembleModel(
     }
 }
 
+// TODO: should lambda be a reference model?
+/**
+ * Model for lambdas.
+ *
+ * Lambdas in Java represent the implementation of a single abstract method (SAM) of a functional interface.
+ * They can be used to create an instance of said functional interface, but **they are not classes**.
+ * In Java lambdas are compiled into synthetic methods of a class they are declared in.
+ * Depending on the captured variables, this method will be either static or non-static.
+ *
+ * Since lambdas are not classes we cannot use a class loader to get info about them as we can do for other models.
+ * Hence the necessity for this specific lambda model that will be processed differently: instead of working
+ * with a class we will be working with the synthetic method that represents our lambda.
+ */
+// TODO: what about support for Kotlin lambdas (they are not exactly the same as Java's due to functional types)
+class UtLambdaModel(
+    override val id: Int?,
+    override val classId: ClassId,
+) : UtReferenceModel(id, classId)
+
 /**
  * Model for a step to obtain [UtAssembleModel].
  */

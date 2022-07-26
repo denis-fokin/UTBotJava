@@ -3320,8 +3320,12 @@ class Traverser(
                     return
                 }
 
-                val onlyAnonymousTypesAvailable = returnValue.typeStorage.possibleConcreteTypes.all { it.classId.isAnonymous }
-                if (!isInNestedMethod && sootClass.isAnonymous && !onlyAnonymousTypesAvailable) {
+                val onlyAnonymousTypesAndLambdasAvailable = returnValue.typeStorage.possibleConcreteTypes.all {
+                    // only ref types can be anonymous or lambdas
+                    val type = (it as? RefType)?.sootClass ?: return@all false
+                    type.isLambda || type.isAnonymous
+                }
+                if (!isInNestedMethod && sootClass.isAnonymous && !onlyAnonymousTypesAndLambdasAvailable) {
                     return
                 }
             }
