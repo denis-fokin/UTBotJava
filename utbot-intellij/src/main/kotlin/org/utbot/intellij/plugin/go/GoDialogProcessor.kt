@@ -1,6 +1,5 @@
 package org.utbot.intellij.plugin.go
 
-import com.goide.execution.target.GoLanguageRuntimeConfiguration
 import com.goide.psi.GoFile
 import com.goide.psi.GoFunctionOrMethodDeclaration
 import com.intellij.openapi.application.invokeLater

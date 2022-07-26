@@ -10,12 +10,13 @@ import org.utbot.fuzzer.FuzzedValue
 import org.utbot.go.GoFunctionOrMethodNode
 import org.utbot.go.codegen.GoSimpleCodeGenerator
 import java.io.File
+import java.io.InputStreamReader
 import java.nio.file.Paths
 
 object GoExecutor {
 
     object Constants {
-        const val FILE_TO_EXECUTE_NAME = "ut_go_executor_tmp_file.go"
+        const val FILE_TO_EXECUTE_NAME = "ut_go_executor_tmp_file_test.go"
 
         // TODO: set up Go executor in general
         val GO_EXECUTOR_PATH = Paths.get("/home/gleb/go/go1.19rc1", "bin", "go").toString()
@@ -25,6 +26,9 @@ object GoExecutor {
         // Note: codes must be correctly convertable into Regex (by .toRegex() method)
         const val NIL_VALUE_CODE = "%__go_exec_nil__%"
         const val DELIMITER_CODE = "%__go_exec_delim__%"
+
+        const val EXECUTION_RESULT_OUTPUT_FILE_NAME = "ut_go_executor_out_communication.temp"
+        const val EXECUTION_RESULT_ERROR_FILE_NAME = "ut_go_executor_err_communication.temp"
     }
 
     private val logger = KotlinLogging.logger {}
@@ -35,20 +39,29 @@ object GoExecutor {
     ): GoUtExecutionResult {
 
         val fileToExecute = createGoFileToExecute(functionOrMethodNode.containingFileNode.containingPackagePath)
+
+        val packageDirectoryFile = File(functionOrMethodNode.containingFileNode.containingPackagePath).absoluteFile
+        val executionOutputFile = packageDirectoryFile.resolve(Constants.EXECUTION_RESULT_OUTPUT_FILE_NAME)
+        val executionErrorFile = packageDirectoryFile.resolve(Constants.EXECUTION_RESULT_ERROR_FILE_NAME)
+
         try {
             val fileToExecuteCode = generateInvokeFunctionOrMethodGoCode(functionOrMethodNode, fuzzedParametersValues)
             fileToExecute.writeText(fileToExecuteCode)
 
+            // TODO: get correct module name and run tests for it; for now: locally from package directory
             val command = listOf(
                 Constants.GO_EXECUTOR_PATH,
-                "run",
-                fileToExecute.absolutePath
+                "test",
+                "-run",
+                createTestFunctionName(functionOrMethodNode.name)
             )
+
 
             val executedProcess = runCatching {
                 val process = ProcessBuilder(command)
                     .redirectOutput(ProcessBuilder.Redirect.PIPE)
                     .redirectError(ProcessBuilder.Redirect.PIPE)
+                    .directory(packageDirectoryFile)
                     .start().also {
                         logger.debug { "GoExecutor process started with PID=${it.pid}" }
                     }
@@ -61,13 +74,18 @@ object GoExecutor {
             }
             val exitCode = executedProcess.exitValue()
             if (exitCode != 0) {
+                println("ERRORS")
+                println(InputStreamReader(executedProcess.errorStream).readText())
+                println("\nSOUT")
+                println(InputStreamReader(executedProcess.inputStream).readText())
+
                 throw RuntimeException(
                     "Execution of ${functionOrMethodNode.name} in child process failed with non-zero exit code = $exitCode"
                 )
             }
 
-            val functionOrMethodReturnOutput = executedProcess.inputStream.reader().readText()
-            val functionOrMethodPanicOutput = executedProcess.errorStream.reader().readText()
+            val functionOrMethodReturnOutput = executionOutputFile.readText()
+            val functionOrMethodPanicOutput = executionErrorFile.readText()
 
             return mapToGoUtExecutionResult(
                 functionOrMethodNode.returnCommonTypes,
@@ -76,7 +94,9 @@ object GoExecutor {
             )
 
         } finally {
-//            fileToExecute.delete()
+            fileToExecute.delete()
+            executionErrorFile.delete()
+            executionOutputFile.delete()
         }
     }
 
@@ -84,6 +104,10 @@ object GoExecutor {
         val file = Paths.get(functionOrMethodContainingPackage, Constants.FILE_TO_EXECUTE_NAME).toFile()
         file.createNewFile()
         return file
+    }
+
+    private fun createTestFunctionName(functionOrMethodName: String): String {
+        return "Test${functionOrMethodName.capitalize()}ByUtGoExecutor"
     }
 
     // TODO: use more convenient code generation
@@ -94,21 +118,27 @@ object GoExecutor {
         val fileBuilder = GoSimpleCodeGenerator.GoFileCodeBuilder()
 
         fileBuilder.setPackage(functionOrMethodNode.containingFileNode.containingPackageName)
-        fileBuilder.setImports(listOf("fmt", "io", "os"))
+        fileBuilder.setImports(listOf("bufio", "fmt", "io", "os", "testing"))
 
-        val printOrExitFunctionDeclaration = """
-            func __printToUtGoExecutorOrExit__(writer io.Writer, value any) {
-            	_, err := fmt.Fprint(writer, value)
+        val checkErrorFunctionDeclaration = """
+            func __checkErrorAndExitToUtGoExecutor__(err error) {
             	if err != nil {
             		os.Exit(1)
             	}
             }
         """.trimIndent()
 
-        val printRvFunctionDeclaration = """
+        val printOrExitFunctionDeclaration = """
+            func __printToUtGoExecutorOrExit__(writer io.Writer, value any) {
+                _, err := fmt.Fprint(writer, value)
+                __checkErrorAndExitToUtGoExecutor__(err)
+            }
+        """.trimIndent()
+
+        val printValueFunctionDeclaration = """
             func __printValueToUtGoExecutor__(writer io.Writer, value any, printPostfixSeparator bool) {
-                const outputNil = "%__go_exec_nil__%"
-                const outputDelimiter = "%__go_exec_delim__%"
+                const outputNil = "${Constants.NIL_VALUE_CODE}"
+                const outputDelimiter = "${Constants.DELIMITER_CODE}"
             
                 if value == nil {
                     __printToUtGoExecutorOrExit__(writer, outputNil)
@@ -122,21 +152,22 @@ object GoExecutor {
             }
         """.trimIndent()
 
-        val suppressOriginalStdOutputDeclaration = """
-            stdout := os.Stdout
-            stderr := os.Stderr
-        
-            null, _ := os.Open(os.DevNull)
-            os.Stdout = null
-            os.Stderr = null
+        val createWriterFunctionDeclaration = """
+            func __createWriterToUtGoExecutorFile__(fileName string) (*os.File, *bufio.Writer) {
+            	file, err := os.Create(fileName)
+            	__checkErrorAndExitToUtGoExecutor__(err)
+            	return file, bufio.NewWriter(file)
+            }
         """.trimIndent()
 
-        val panicCatcherFunction = """
-            defer func() {
-                panicMessage := recover()
-                __printValueToUtGoExecutor__(stderr, panicked, true)
-                __printValueToUtGoExecutor__(stderr, panicMessage, false)
-            }()
+        val closeWriterFunctionDeclaration = """
+            func __closeWriterToUtGoExecutorFile__(file *os.File, writer *bufio.Writer) {
+                flushErr := writer.Flush()
+                __checkErrorAndExitToUtGoExecutor__(flushErr)
+            
+                closeErr := file.Close()
+                __checkErrorAndExitToUtGoExecutor__(closeErr)
+            }
         """.trimIndent()
 
         // rv = return values
@@ -151,36 +182,42 @@ object GoExecutor {
         )
 
         val printRvVariablesCalls =
-            rvVariablesNames.joinToString(separator = ", false)\n", postfix = ", true)") {
-                "__printValueToUtGoExecutor__(stdout, $it"
+            rvVariablesNames.joinToString(separator = ", true)\n\t", postfix = ", false)") {
+                "__printValueToUtGoExecutor__(outWriter, $it"
             }
 
-        val mainDeclaration = """
-            func main() {
-                ${suppressOriginalStdOutputDeclaration.indentize()}
-            
+        val executionTestDeclaration = """
+            func ${createTestFunctionName(functionOrMethodNode.name)}(t *testing.T) {
+                outFile, outWriter := __createWriterToUtGoExecutorFile__("${Constants.EXECUTION_RESULT_OUTPUT_FILE_NAME}")
+                errFile, errWriter := __createWriterToUtGoExecutorFile__("${Constants.EXECUTION_RESULT_ERROR_FILE_NAME}")
+        
                 panicked := true
-                ${panicCatcherFunction.indentize()}
+                defer func() {
+                    panicMessage := recover()
+                    __printValueToUtGoExecutor__(errWriter, panicked, true)
+                    __printValueToUtGoExecutor__(errWriter, panicMessage, false)
+            
+                    __closeWriterToUtGoExecutorFile__(outFile, outWriter)
+                    __closeWriterToUtGoExecutorFile__(errFile, errWriter)
+                }()
                 
                 $fuzzedFunctionCall
                 panicked = false
                 
-                ${printRvVariablesCalls.indentize()}
+                $printRvVariablesCalls
             }
         """.trimIndent()
 
         fileBuilder.addTopLevelElements(
+            checkErrorFunctionDeclaration,
             printOrExitFunctionDeclaration,
-            printRvFunctionDeclaration,
-            mainDeclaration
+            printValueFunctionDeclaration,
+            createWriterFunctionDeclaration,
+            closeWriterFunctionDeclaration,
+            executionTestDeclaration
         )
 
         return fileBuilder.buildCodeString()
-    }
-
-    private fun String.indentize(indentsNumber: Int = 1): String {
-        val tab = "\t".repeat(indentsNumber)
-        return this.split("\n").joinToString(separator = "\n") { "$tab$it" }
     }
 
     private fun mapToGoUtExecutionResult(
