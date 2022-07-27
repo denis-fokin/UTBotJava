@@ -49,10 +49,10 @@ object JsAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
                 )
             }
             is Int -> {
-                fuzzedConcreteValues.add(FuzzedConcreteValue(jsIntClassId, literalNode.value, lastFuzzedOpGlobal))
+                fuzzedConcreteValues.add(FuzzedConcreteValue(jsNumberClassId, literalNode.value, lastFuzzedOpGlobal))
             }
             is Long -> {
-                fuzzedConcreteValues.add(FuzzedConcreteValue(jsLongClassId, literalNode.value, lastFuzzedOpGlobal))
+                fuzzedConcreteValues.add(FuzzedConcreteValue(jsNumberClassId, literalNode.value, lastFuzzedOpGlobal))
             }
             is Double -> {
                 fuzzedConcreteValues.add(FuzzedConcreteValue(jsDoubleClassId, literalNode.value, lastFuzzedOpGlobal))

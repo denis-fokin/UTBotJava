@@ -4,31 +4,30 @@ import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.JsClassId
 
 val jsUndefinedClassId = JsClassId("undefined")
-val jsIntClassId = JsClassId("int")
+val jsNumberClassId = JsClassId("number")
 val jsBooleanClassId = JsClassId("boolean")
 val jsDoubleClassId = JsClassId("double")
 val jsStringClassId = JsClassId("string")
-val jsLongClassId = JsClassId("long")
 
 
 val jsPrimitives = setOf(
-    jsIntClassId,
+    jsNumberClassId,
     jsBooleanClassId,
     jsDoubleClassId,
 )
 
 fun ClassId.toJsClassId() =
     when (this) {
-        intClassId -> jsIntClassId
+        intClassId -> jsNumberClassId
         booleanClassId -> jsBooleanClassId
         doubleClassId -> jsDoubleClassId
         stringClassId -> jsStringClassId
-        longClassId -> jsLongClassId
+        longClassId -> jsNumberClassId
         else -> jsUndefinedClassId
     }
 
 
-val JsClassId.isPrimitive: Boolean
+val JsClassId.isJsPrimitive: Boolean
     get() = this in jsPrimitives
 
 val JsClassId.isUndefined: Boolean

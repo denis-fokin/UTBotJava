@@ -11,8 +11,10 @@ import org.utbot.fuzzer.providers.StringConstantModelProvider
 import kotlin.random.Random
 
 object JsStringModelProvider : ModelProvider {
+
+    internal val random = Random(72923L)
+
     override fun generate(description: FuzzedMethodDescription): Sequence<FuzzedParameter> = sequence {
-        val random = Random(72923L)
         description.concreteValues
             .asSequence()
             .filter { (classId, _) -> classId.toJsClassId() == jsStringClassId }
