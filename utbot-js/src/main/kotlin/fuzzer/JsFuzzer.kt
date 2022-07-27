@@ -1,6 +1,10 @@
 package fuzzer
 
-import fuzzer.providers.*
+import fuzzer.providers.JsConstantsModelProvider
+import fuzzer.providers.JsMultipleTypesModelProvider
+import fuzzer.providers.JsPrimitivesModelProvider
+import fuzzer.providers.JsStringModelProvider
+import fuzzer.providers.JsUndefinedModelProvider
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.ModelProvider
