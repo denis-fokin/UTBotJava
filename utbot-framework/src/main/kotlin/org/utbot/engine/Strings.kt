@@ -8,14 +8,9 @@ import org.utbot.engine.overrides.strings.UtStringBuilder
 import org.utbot.engine.pc.RewritingVisitor
 import org.utbot.engine.pc.UtAddrExpression
 import org.utbot.engine.pc.UtBoolExpression
-import org.utbot.engine.pc.UtConvertToString
 import org.utbot.engine.pc.UtFalse
 import org.utbot.engine.pc.UtIntSort
 import org.utbot.engine.pc.UtLongSort
-import org.utbot.engine.pc.UtStringCharAt
-import org.utbot.engine.pc.UtStringLength
-import org.utbot.engine.pc.UtStringToArray
-import org.utbot.engine.pc.UtStringToInt
 import org.utbot.engine.pc.UtTrue
 import org.utbot.engine.pc.cast
 import org.utbot.engine.pc.isConcrete
@@ -24,7 +19,6 @@ import org.utbot.engine.pc.mkChar
 import org.utbot.engine.pc.mkEq
 import org.utbot.engine.pc.mkInt
 import org.utbot.engine.pc.mkNot
-import org.utbot.engine.pc.mkString
 import org.utbot.engine.pc.select
 import org.utbot.engine.pc.toConcrete
 import org.utbot.engine.symbolic.asHardConstraint
