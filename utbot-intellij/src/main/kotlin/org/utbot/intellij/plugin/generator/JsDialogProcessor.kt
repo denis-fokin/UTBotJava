@@ -11,6 +11,7 @@ import com.oracle.js.parser.ir.FunctionNode
 import com.oracle.js.parser.ir.VarNode
 import fuzzer.JsAstVisitor
 import fuzzer.JsFuzzer.jsFuzzing
+import fuzzer.FuzzerUtils
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
 import org.utbot.framework.plugin.api.*
@@ -59,6 +60,7 @@ object JsDialogProcessor {
     private fun createTests(model: JsTestsModel) {
         model.selectedMethods?.forEach { jsMemberInfo ->
             val funcNode = getFunctionNode(jsMemberInfo)
+            FuzzerUtils.createMapOfTypedParams()
             //TODO: think of JsClassId("debug") and jsUndefinedClassId usages
             val execId = MethodId(
                 JsClassId("debug"),
@@ -79,7 +81,6 @@ object JsDialogProcessor {
             val testsForGenerator = mutableListOf<Sequence<*>>()
             randomParams.forEach { param ->
                 val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
-//                val testCodeGen = JsTestCodeGenerator.generateTestCode(funcNode, param, JsPrimitiveModel(returnValue))
                 // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
                 // Hack: Should create one file with all fun to compile?
                 testsForGenerator.add(
