@@ -20,9 +20,7 @@ object JsMultipleTypesModelProvider : ModelProvider {
                 classId is JsMultipleClassId
             }
         parametersFiltered.forEach { (jsMultipleClassId, indices) ->
-            val types = (jsMultipleClassId as JsMultipleClassId)
-                .jsJoinedName.split('|')
-                .map { JsClassId(it) }
+            val types = (jsMultipleClassId as JsMultipleClassId).types
             types.forEach { classId ->
                 when {
                     classId.isJsPrimitive -> {

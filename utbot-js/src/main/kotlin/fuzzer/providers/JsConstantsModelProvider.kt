@@ -24,9 +24,6 @@ object JsConstantsModelProvider : ModelProvider {
                         description.parametersMap.getOrElse(m.model.classId) { emptyList() }.forEach { index ->
                             yield(FuzzedParameter(index, m))
                         }
-                        description.parametersMap.getOrElse(jsUndefinedClassId) { emptyList() }.forEach { index ->
-                            yield(FuzzedParameter(index, m))
-                        }
                     }
             }
     }

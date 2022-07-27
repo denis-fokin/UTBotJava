@@ -26,9 +26,6 @@ object JsStringModelProvider : ModelProvider {
                         description.parametersMap.getOrElse(model.classId) { emptyList() }.forEach { index ->
                             yield(FuzzedParameter(index, model.fuzzed { summary = "%var% = string" }))
                         }
-                        description.parametersMap.getOrElse(jsUndefinedClassId) { emptyList() }.forEach { index ->
-                            yield(FuzzedParameter(index, model.fuzzed { summary = "%var% = string" }))
-                        }
                     }
             }
     }

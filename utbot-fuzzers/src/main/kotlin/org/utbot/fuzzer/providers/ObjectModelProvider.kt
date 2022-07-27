@@ -72,6 +72,8 @@ class ObjectModelProvider : ModelProvider {
             parameters.asSequence()
                 .filterNot { it == stringClassId || it.isPrimitiveWrapper }
                 .flatMap { classId ->
+                    val xanax = classId.allConstructors.toList()
+                    val sativa = classId.allMethods.toList()
                     collectConstructors(classId) { javaConstructor ->
                         isAccessible(javaConstructor, description.packageName)
                     }.sortedWith(

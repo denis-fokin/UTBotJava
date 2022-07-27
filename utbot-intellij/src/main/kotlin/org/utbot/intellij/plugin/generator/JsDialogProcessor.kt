@@ -1,15 +1,17 @@
 package org.utbot.intellij.plugin.generator
 
+import com.intellij.lang.ecmascript6.psi.ES6Class
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.intellij.psi.util.PsiTreeUtil
 import com.oracle.js.parser.ErrorManager
 import com.oracle.js.parser.Parser
 import com.oracle.js.parser.ScriptEnvironment
 import com.oracle.js.parser.Source
 import com.oracle.js.parser.ir.FunctionNode
 import com.oracle.js.parser.ir.VarNode
-import fuzzer.JsAstVisitor
+import parser.JsFuzzerAstVisitor
 import fuzzer.JsFuzzer.jsFuzzing
 import fuzzer.FuzzerUtils
 import org.graalvm.polyglot.Context
@@ -59,24 +61,26 @@ object JsDialogProcessor {
 
     private fun createTests(model: JsTestsModel) {
         model.selectedMethods?.forEach { jsMemberInfo ->
+            // TODO: needed for leading comments, find a place for parentPsi.
+            val parentPsi = PsiTreeUtil.getParentOfType(jsMemberInfo.member, ES6Class::class.java)
             val funcNode = getFunctionNode(jsMemberInfo)
             FuzzerUtils.createMapOfTypedParams()
-            //TODO: think of jsUndefinedClassId usages
+            // TODO: think of jsUndefinedClassId usages
             val execId = MethodId(
-                JsClassId(funcNode.name.toString()),
+                JsClassId(parentPsi?.name ?: "undefined"),
                 funcNode.name.toString(),
                 jsUndefinedClassId,
                 funcNode.parameters.toList().map { JsMultipleClassId("number|string") }
             )
-            funcNode.body.accept(JsAstVisitor)
-            val methodUnderTestDescription = FuzzedMethodDescription(execId, JsAstVisitor.fuzzedConcreteValues).apply {
+            funcNode.body.accept(JsFuzzerAstVisitor)
+            val methodUnderTestDescription = FuzzedMethodDescription(execId, JsFuzzerAstVisitor.fuzzedConcreteValues).apply {
                 compilableName = funcNode.name.toString()
                 val names = funcNode.parameters.map { it.name.toString() }
                 parameterNameMap = { index -> names.getOrNull(index) }
             }
             val fuzzedValues =
                 jsFuzzing(methodUnderTestDescription = methodUnderTestDescription).toList()
-            //For dev purposes only random set of fuzzed values is picked. TODO: patch this later
+            // For dev purposes only random set of fuzzed values is picked. TODO: patch this later
             val randomParams = getRandomNumFuzzedValues(fuzzedValues)
             val testsForGenerator = mutableListOf<Sequence<*>>()
             randomParams.forEach { param ->
@@ -117,9 +121,10 @@ object JsDialogProcessor {
     private fun makeCallFunctionString(fuzzedValue: List<FuzzedValue>, method: FunctionNode): String {
         var callString = "${method.name}("
         fuzzedValue.forEach { value ->
-            when ((value.model as JsPrimitiveModel).value) {
-                is String -> callString += "\"${(value.model as JsPrimitiveModel).value}\","
-                else -> callString += "${(value.model as JsPrimitiveModel).value},"
+            // Explicit string wrap with "" is needed.
+            callString += when ((value.model as JsPrimitiveModel).value) {
+                is String -> "\"${(value.model as JsPrimitiveModel).value}\","
+                else -> "${(value.model as JsPrimitiveModel).value},"
             }
         }
         callString = callString.dropLast(1)
@@ -132,7 +137,7 @@ object JsDialogProcessor {
         Thread.currentThread().contextClassLoader = Context::class.java.classLoader
         val parser = Parser(
             ScriptEnvironment.builder().build(),
-            Source.sourceFor("test", funFixString),
+            Source.sourceFor("func_dec", funFixString),
             ErrorManager.ThrowErrorManager()
         )
         val functionNode = parser.parse()

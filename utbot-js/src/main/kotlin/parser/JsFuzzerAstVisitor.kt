@@ -1,4 +1,4 @@
-package fuzzer
+package parser
 
 import com.oracle.js.parser.ir.BinaryNode
 import com.oracle.js.parser.ir.LexicalContext
@@ -10,7 +10,7 @@ import org.utbot.framework.plugin.api.util.*
 import org.utbot.fuzzer.FuzzedConcreteValue
 import org.utbot.fuzzer.FuzzedOp
 
-object JsAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
+object JsFuzzerAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
     private var lastFuzzedOpGlobal = FuzzedOp.NONE
     val fuzzedConcreteValues = mutableSetOf<FuzzedConcreteValue>()
 

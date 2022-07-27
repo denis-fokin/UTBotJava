@@ -38,15 +38,15 @@ object JsPrimitivesModelProvider : ModelProvider {
                 JsPrimitiveModel(0).fuzzed { summary = "%var% = 0" },
                 JsPrimitiveModel(1).fuzzed { summary = "%var% > 0" },
                 JsPrimitiveModel((-1)).fuzzed { summary = "%var% < 0" },
-                JsPrimitiveModel(MIN_INT).fuzzed { summary = "%var% = Int.MIN_VALUE" },
-                JsPrimitiveModel(MAX_INT).fuzzed { summary = "%var% = Int.MAX_VALUE" },
+                JsPrimitiveModel(MIN_INT).fuzzed { summary = "%var% = Number.MIN_SAFE_VALUE" },
+                JsPrimitiveModel(MAX_INT).fuzzed { summary = "%var% = Number.MAX_SAFE_VALUE" },
             )
             jsDoubleClassId -> listOf(
                 JsPrimitiveModel(0.0).fuzzed { summary = "%var% = 0.0" },
                 JsPrimitiveModel(1.1).fuzzed { summary = "%var% > 0.0" },
                 JsPrimitiveModel(-1.1).fuzzed { summary = "%var% < 0.0" },
-                JsPrimitiveModel(MIN_INT.toDouble()).fuzzed { summary = "%var% = Double.MIN_VALUE" },
-                JsPrimitiveModel(MAX_INT.toDouble()).fuzzed { summary = "%var% = Double.MAX_VALUE" },
+                JsPrimitiveModel(MIN_INT.toDouble()).fuzzed { summary = "%var% = Number.MIN_SAFE_VALUE" },
+                JsPrimitiveModel(MAX_INT.toDouble()).fuzzed { summary = "%var% = Number.MAX_SAFE_VALUE" },
 //                TODO: Think about such values as they are present in JavaScript.
 //                UtPrimitiveModel(Double.NEGATIVE_INFINITY).fuzzed { summary = "%var% = Double.NEGATIVE_INFINITY" },
 //                UtPrimitiveModel(Double.POSITIVE_INFINITY).fuzzed { summary = "%var% = Double.POSITIVE_INFINITY" },

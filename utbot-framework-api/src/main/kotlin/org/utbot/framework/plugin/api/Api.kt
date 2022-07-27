@@ -563,12 +563,66 @@ data class UtStaticMethodInstrumentation(
 ) : UtInstrumentation()
 
 
-open class JsClassId(private val jsName: String) : ClassId(jsName) {
+open class JsClassId(
+    private val jsName: String,
+    private val methods: Sequence<JsMethodId> = emptySequence(),
+    private val constructors: Sequence<JsConstructorId> = emptySequence(),
+) : ClassId(jsName) {
+
     override val simpleName: String
         get() = jsName
+
+    override val allMethods: Sequence<JsMethodId>
+        get() = methods
+
+    override val allConstructors: Sequence<ConstructorId>
+        get() = constructors
 }
 
-class JsMultipleClassId(val jsJoinedName: String) : JsClassId(jsJoinedName)
+class JsMethodId(
+    override val classId: JsClassId,
+    override val name: String,
+    override val returnType: JsClassId,
+    override val parameters: List<JsClassId>,
+    private val staticModifier: Boolean,
+) : MethodId(classId, name, returnType, parameters) {
+
+    override val isPrivate: Boolean
+        get() = throw UnsupportedOperationException("JavaScript does not support private methods.")
+
+    override val isProtected: Boolean
+        get() = throw UnsupportedOperationException("JavaScript does not support protected methods.")
+
+    override val isPublic: Boolean
+        get() = true
+
+    override val isStatic: Boolean
+        get() = staticModifier
+}
+
+class JsConstructorId(
+    override val classId: JsClassId,
+    override val parameters: List<JsClassId>,
+) : ConstructorId(classId, parameters) {
+
+    override val returnType: JsClassId
+        get() = jsUndefinedClassId
+
+    override val isPrivate: Boolean
+        get() = throw UnsupportedOperationException("JavaScript does not support private constructors.")
+
+    override val isProtected: Boolean
+        get() = throw UnsupportedOperationException("JavaScript does not support protected constructors.")
+
+    override val isPublic: Boolean
+        get() = true
+}
+
+class JsMultipleClassId(private val jsJoinedName: String) : JsClassId(jsJoinedName) {
+
+    val types: Sequence<JsClassId>
+        get() = jsJoinedName.split('|').map { JsClassId(it) }.asSequence()
+}
 
 open class JsUtModel(
     override val classId: JsClassId
@@ -587,15 +641,6 @@ data class JsPrimitiveModel(
 }
 private fun jsPrimitiveModelValueToClassId(value: Any) =
     primitiveModelValueToClassId(value).toJsClassId()
-
-//is Byte -> java.lang.Byte.TYPE.id
-//is Short -> java.lang.Short.TYPE.id
-//is Char -> Character.TYPE.id
-//is Int -> Integer.TYPE.id
-//is Long -> java.lang.Long.TYPE.id
-//is Float -> java.lang.Float.TYPE.id
-//is Double -> java.lang.Double.TYPE.id
-//is Boolean -> java.lang.Boolean.TYPE.id
 
 class JsNullModel(
     classId: JsClassId
@@ -1013,7 +1058,7 @@ open class MethodId(
         get() = Modifier.isPrivate(method.modifiers)
 }
 
-class ConstructorId(
+open class ConstructorId(
     override val classId: ClassId,
     override val parameters: List<ClassId>
 ) : ExecutableId() {

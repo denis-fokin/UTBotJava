@@ -29,8 +29,8 @@ object JsUndefinedModelProvider : ModelProvider {
             JsPrimitiveModel(0).fuzzed { summary = "%var% = 0" },
             JsPrimitiveModel(-1).fuzzed { summary = "%var% < 0" },
             JsPrimitiveModel(1).fuzzed { summary = "%var% > 0" },
-            JsPrimitiveModel(MAX_INT).fuzzed { summary = "%var% = Integer.MAX_SAFE_VALUE" },
-            JsPrimitiveModel(MIN_INT).fuzzed { summary = "%var% = Integer.MIN_SAFE_VALUE" },
+            JsPrimitiveModel(MAX_INT).fuzzed { summary = "%var% = Number.MAX_SAFE_VALUE" },
+            JsPrimitiveModel(MIN_INT).fuzzed { summary = "%var% = Number.MIN_SAFE_VALUE" },
 
             JsPrimitiveModel(0.0).fuzzed { summary = "%var% = 0.0" },
             JsPrimitiveModel(-1.0).fuzzed { summary = "%var% < 0.0" },
