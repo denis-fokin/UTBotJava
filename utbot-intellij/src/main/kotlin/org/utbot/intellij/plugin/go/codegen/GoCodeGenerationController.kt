@@ -66,7 +66,7 @@ object GoCodeGenerationController {
         return srcFilePackage.findFile(testFileNameWithExtension)
     }
 
-    private fun createTestFileName(srcFile: PsiFile) = File(srcFile.name).nameWithoutExtension + "_test"
+    private fun createTestFileName(srcFile: PsiFile) = File(srcFile.name).nameWithoutExtension + "_go_ut_test"
 
     private fun generateCode(
         testFile: PsiFile,

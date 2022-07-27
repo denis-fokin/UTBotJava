@@ -56,5 +56,5 @@ data class GoFuzzedFunctionOrMethodTestCase(
     val fuzzedParametersValues: List<FuzzedValue>,
     val executionResult: GoUtExecutionResult,
 ) {
-    val containingPackagePath: String get() = functionOrMethodNode.containingFileNode.containingPackagePath
+    val containingPackageName: String get() = functionOrMethodNode.containingFileNode.containingPackageName
 }
