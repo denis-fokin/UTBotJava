@@ -5,8 +5,9 @@ import guava.examples.math.IntMath
 import org.junit.jupiter.api.Test
 import org.utbot.examples.DoNotCalculate
 import org.utbot.framework.plugin.api.MockStrategyApi
+import org.utbot.framework.plugin.api.UtClusterInfo
 
-class SummaryIntMath : SummaryTestCaseGeneratorTest(
+class SummaryIntMathTest : SummaryTestCaseGeneratorTest(
     IntMath::class,
 ) {
     @Test
@@ -135,10 +136,14 @@ class SummaryIntMath : SummaryTestCaseGeneratorTest(
             methodName14
         )
 
+        val clusterInfo = listOf(
+            Pair(UtClusterInfo("SUCCESSFUL EXECUTIONS for method pow(int, int)", null), 14)
+        )
+
         val method = IntMath::pow
         val mockStrategy = MockStrategyApi.NO_MOCKS
         val coverage = DoNotCalculate
 
-        check(method, mockStrategy, coverage, summaryKeys, methodNames, displayNames)
+        summaryCheck(method, mockStrategy, coverage, summaryKeys, methodNames, displayNames, clusterInfo)
     }
 }

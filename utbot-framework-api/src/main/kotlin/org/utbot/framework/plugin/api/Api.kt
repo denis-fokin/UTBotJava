@@ -121,6 +121,8 @@ sealed class UtResult
  * - static fields changed during execution;
  * - required instrumentation details (such as randoms, time, static methods).
  * - coverage information (instructions) if this execution was obtained from the concrete execution.
+ * - the engine type that created this execution.
+ * - comments, method names and display names created by utbot-summary module.
  */
 data class UtExecution(
     val stateBefore: EnvironmentModels,
@@ -130,6 +132,7 @@ data class UtExecution(
     val path: MutableList<Step>,
     val fullPath: List<Step>,
     val coverage: Coverage? = null,
+    val createdBy: UtExecutionCreator? = null,
     var summary: List<DocStatement>? = null,
     var testMethodName: String? = null,
     var displayName: String? = null,
@@ -655,10 +658,13 @@ val Type.classId: ClassId
  * [elementClassId] if this class id represents an array class, then this property
  * represents the class id of the array's elements. Otherwise, this property is null.
  */
-open class ClassId(
+open class ClassId @JvmOverloads constructor(
     val name: String,
-    val elementClassId: ClassId? = null
+    val elementClassId: ClassId? = null,
+    // Treat simple class ids as non-nullable
+    open val isNullable: Boolean = false
 ) {
+
     open val canonicalName: String
         get() = jClass.canonicalName ?: error("ClassId $name does not have canonical name")
 
@@ -721,10 +727,6 @@ open class ClassId(
 
     open val isSynthetic: Boolean
         get() = jClass.isSynthetic
-
-    open val isNullable: Boolean
-        // Treat simple class ids as non-nullable
-        get() = false
 
     /**
      * Collects all declared methods (including private and protected) from class and all its superclasses to sequence
@@ -800,6 +802,7 @@ class BuiltinClassId(
     override val simpleName: String,
     // by default we assume that the class is not a member class
     override val simpleNameWithEnclosings: String = simpleName,
+    override val isNullable: Boolean = false,
     override val isPublic: Boolean = true,
     override val isProtected: Boolean = false,
     override val isPrivate: Boolean = false,
@@ -819,7 +822,7 @@ class BuiltinClassId(
             -1, 0 -> ""
             else -> canonicalName.substring(0, index)
         },
-) : ClassId(name) {
+) : ClassId(name = name, isNullable = isNullable) {
     init {
         BUILTIN_CLASSES_BY_NAMES[name] = this
     }
@@ -1126,7 +1129,7 @@ enum class CodegenLanguage(
     @Suppress("unused") override val description: String = "Generate unit tests in $displayName"
 ) : CodeGenerationSettingItem {
     JAVA(displayName = "Java"),
-    KOTLIN(displayName = "Kotlin"),
+    KOTLIN(displayName = "Kotlin (experimental)"),
     GO(displayName = "Go");
 
     enum class OperatingSystem {
@@ -1222,7 +1225,14 @@ private fun StringBuilder.appendOptional(name: String, value: Map<*, *>) {
 }
 
 /**
- * Entity that represents cluster information that should appear in the comment
+ * Enum that represents different type of engines that produce tests.
+ */
+enum class UtExecutionCreator {
+    FUZZER, SYMBOLIC_ENGINE
+}
+
+/**
+ * Entity that represents cluster information that should appear in the comment.
  */
 data class UtClusterInfo(
     val header: String? = null,
@@ -1230,13 +1240,13 @@ data class UtClusterInfo(
 )
 
 /**
- * Entity that represents cluster of executions
+ * Entity that represents cluster of executions.
  */
 data class UtExecutionCluster(val clusterInfo: UtClusterInfo, val executions: List<UtExecution>)
 
 
 /**
- * Entity that represents various types of statements in comments
+ * Entity that represents various types of statements in comments.
  */
 sealed class DocStatement
 

@@ -21,6 +21,9 @@ import java.nio.file.Paths
 import java.time.temporal.ChronoUnit
 import kotlin.reflect.KClass
 import mu.KotlinLogging
+import org.utbot.common.filterWhen
+import org.utbot.framework.UtSettings
+import org.utbot.framework.util.isKnownSyntheticMethod
 
 
 private val logger = KotlinLogging.logger {}
@@ -92,7 +95,8 @@ class GenerateTestsCommand :
 
             val classUnderTest: KClass<*> = loadClassBySpecifiedFqn(targetClassFqn)
             val targetMethods = classUnderTest.targetMethods()
-            initializeEngine(workingDirectory)
+                .filterWhen(UtSettings.skipTestGenerationForSyntheticMethods) { !isKnownSyntheticMethod(it) }
+            val testCaseGenerator = initializeGenerator(workingDirectory)
 
             if (targetMethods.isEmpty()) {
                 throw Exception("Nothing to process. No methods were provided")
@@ -103,6 +107,7 @@ class GenerateTestsCommand :
                 val testClassName = output?.toPath()?.toFile()?.nameWithoutExtension
                     ?: "${classUnderTest.simpleName}Test"
                 val testSets = generateTestSets(
+                    testCaseGenerator,
                     targetMethods,
                     Paths.get(sourceCodeFile),
                     searchDirectory = workingDirectory,
@@ -145,7 +150,7 @@ class GenerateTestsCommand :
                     SourceFindingStrategyDefault(classFqn, sourceCodeFile, testsFilePath, projectRootPath)
                 val report = SarifReport(testSets, testClassBody, sourceFinding).createReport()
                 saveToFile(report, sarifReport)
-                println("The report was saved to \"$sarifReport\". You can open it using the VS Code extension \"Sarif Viewer\".")
+                println("The report was saved to \"$sarifReport\".")
             }
         }
     } catch (t: Throwable) {

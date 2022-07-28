@@ -18,6 +18,7 @@ import org.utbot.framework.plugin.api.MockFramework
 import org.utbot.framework.plugin.api.MockStrategyApi
 import org.utbot.framework.plugin.api.TestCaseGenerator
 import org.utbot.framework.plugin.api.UtExecution
+import org.utbot.framework.plugin.api.UtExecutionCreator
 import org.utbot.framework.plugin.api.UtMethod
 import org.utbot.framework.plugin.api.UtPrimitiveModel
 import org.utbot.framework.plugin.api.UtMethodTestSet
@@ -82,8 +83,7 @@ object UtBotJavaApi {
         }
 
         return withUtContext(utContext) {
-            val testGenerator = CodeGenerator().apply {
-                init(
+            val codeGenerator = CodeGenerator(
                     classUnderTest = classUnderTest,
                     testFramework = testFramework,
                     mockFramework = mockFramework,
@@ -93,12 +93,8 @@ object UtBotJavaApi {
                     generateWarningsForStaticMocking = generateWarningsForStaticMocking,
                     testClassPackageName = testClassPackageName
                 )
-            }
 
-            testGenerator.generateAsString(
-                testSets,
-                destinationClassName
-            )
+            codeGenerator.generateAsString(testSets, destinationClassName)
         }
     }
 
@@ -122,12 +118,8 @@ object UtBotJavaApi {
         val testSets: MutableList<UtMethodTestSet> = mutableListOf()
 
         testSets.addAll(withUtContext(utContext) {
-            TestCaseGenerator
-                .apply {
-                    init(
-                        FileUtil.isolateClassFiles(classUnderTest.kotlin).toPath(), classpath, dependencyClassPath
-                    )
-                }
+            val buildPath = FileUtil.isolateClassFiles(classUnderTest.kotlin).toPath()
+            TestCaseGenerator(buildPath, classpath, dependencyClassPath)
                 .generate(
                     methodsForAutomaticGeneration.map {
                         toUtMethod(
@@ -189,12 +181,9 @@ object UtBotJavaApi {
         }
 
         return withUtContext(UtContext(classUnderTest.classLoader)) {
-            TestCaseGenerator
-                .apply {
-                    init(
-                        FileUtil.isolateClassFiles(classUnderTest.kotlin).toPath(), classpath, dependencyClassPath
-                    )
-                }.generate(
+            val buildPath = FileUtil.isolateClassFiles(classUnderTest.kotlin).toPath()
+            TestCaseGenerator(buildPath, classpath, dependencyClassPath)
+                .generate(
                     methodsForAutomaticGeneration.map {
                         toUtMethod(
                             it.methodToBeTestedFromUserInput,
@@ -252,12 +241,12 @@ object UtBotJavaApi {
         }
 
         val utExecution = UtExecution(
-            testInfo.initialState,
-            testInfo.initialState, // it seems ok for concrete execution
-            utExecutionResult,
-            emptyList(),
-            mutableListOf(),
-            listOf()
+            stateBefore = testInfo.initialState,
+            stateAfter = testInfo.initialState, // it seems ok for concrete execution
+            result = utExecutionResult,
+            instrumentation = emptyList(),
+            path = mutableListOf(),
+            fullPath = listOf()
         )
 
         val utMethod = UtMethod(methodCallable, containingClass.kotlin)

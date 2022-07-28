@@ -52,7 +52,7 @@ internal class CgTestClassConstructor(val context: CgContext) :
                     cgDataProviderMethods.clear()
                     for (testSet in testSets) {
                         updateCurrentExecutable(testSet.method)
-                        val currentMethodUnderTestRegions = construct(testSet)
+                        val currentMethodUnderTestRegions = construct(testSet) ?: continue
                         val executableUnderTestCluster = CgExecutableUnderTestCluster(
                             "Test suites for executable $currentExecutable",
                             currentMethodUnderTestRegions
@@ -76,7 +76,11 @@ internal class CgTestClassConstructor(val context: CgContext) :
         }
     }
 
-    private fun construct(testSet: UtMethodTestSet): List<CgRegion<CgMethod>> {
+    private fun construct(testSet: UtMethodTestSet): List<CgRegion<CgMethod>>? {
+        if (testSet.executions.isEmpty()) {
+            return null
+        }
+
         val (methodUnderTest, executions, _, _, clustersInfo) = testSet
         val regions = mutableListOf<CgRegion<CgMethod>>()
         val requiredFields = mutableListOf<CgParameterDeclaration>()
@@ -107,17 +111,15 @@ internal class CgTestClassConstructor(val context: CgContext) :
                     val parameterizedTestMethod =
                         methodConstructor.createParameterizedTestMethod(testSet, dataProviderMethodName)
 
-                    if (parameterizedTestMethod != null) {
-                        requiredFields += parameterizedTestMethod.requiredFields
+                    requiredFields += parameterizedTestMethod.requiredFields
 
-                        cgDataProviderMethods +=
-                            methodConstructor.createParameterizedTestDataProvider(testSet, dataProviderMethodName)
+                    cgDataProviderMethods +=
+                        methodConstructor.createParameterizedTestDataProvider(testSet, dataProviderMethodName)
 
-                        regions += CgSimpleRegion(
-                            "Parameterized test for method ${methodUnderTest.displayName}",
-                            listOf(parameterizedTestMethod),
-                        )
-                    }
+                    regions += CgSimpleRegion(
+                        "Parameterized test for method ${methodUnderTest.displayName}",
+                        listOf(parameterizedTestMethod),
+                    )
                 }.onFailure { error -> processFailure(testSet, error) }
             }
         }
@@ -189,9 +191,29 @@ data class TestsGenerationReport(
         get() = executables.firstOrNull()?.clazz
             ?: error("No executables found in test report")
 
-    // Summary message is generated lazily to avoid evaluation of classUnderTest
-    var summaryMessage: () -> String = { "Unit tests for $classUnderTest were generated successfully." }
     val initialWarnings: MutableList<() -> String> = mutableListOf()
+    val hasWarnings: Boolean
+        get() = initialWarnings.isNotEmpty()
+
+    val detailedStatistics: String
+        get() = buildString {
+            appendHtmlLine("Class: ${classUnderTest.qualifiedName}")
+            val testMethodsStatistic = executables.map { it.countTestMethods() }
+            val errors = executables.map { it.countErrors() }
+            val overallErrors = errors.sum()
+
+            appendHtmlLine("Successful test methods: ${testMethodsStatistic.sumBy { it.successful }}")
+            appendHtmlLine(
+                "Failing because of unexpected exception test methods: ${testMethodsStatistic.sumBy { it.failing }}"
+            )
+            appendHtmlLine(
+                "Failing because of exceeding timeout test methods: ${testMethodsStatistic.sumBy { it.timeout }}"
+            )
+            appendHtmlLine(
+                "Failing because of possible JVM crash test methods: ${testMethodsStatistic.sumBy { it.crashes }}"
+            )
+            appendHtmlLine("Not generated because of internal errors test methods: $overallErrors")
+        }
 
     fun addMethodErrors(testSet: UtMethodTestSet, errors: Map<String, Int>) {
         this.errors[testSet.method] = errors
@@ -216,61 +238,24 @@ data class TestsGenerationReport(
         }
     }
 
-    override fun toString(): String = buildString {
-        appendHtmlLine(summaryMessage())
-        appendHtmlLine()
-        initialWarnings.forEach { appendHtmlLine(it()) }
-        appendHtmlLine()
+    fun toString(isShort: Boolean): String = buildString {
+        appendHtmlLine("Target: ${classUnderTest.qualifiedName}")
+        if (initialWarnings.isNotEmpty()) {
+            initialWarnings.forEach { appendHtmlLine(it()) }
+            appendHtmlLine()
+        }
 
         val testMethodsStatistic = executables.map { it.countTestMethods() }
-        val errors = executables.map { it.countErrors() }
         val overallTestMethods = testMethodsStatistic.sumBy { it.count }
-        val overallErrors = errors.sum()
+
         appendHtmlLine("Overall test methods: $overallTestMethods")
-        appendHtmlLine("Successful test methods: ${testMethodsStatistic.sumBy { it.successful }}")
-        appendHtmlLine(
-            "Failing because of unexpected exception test methods: ${testMethodsStatistic.sumBy { it.failing }}"
-        )
-        appendHtmlLine(
-            "Failing because of exceeding timeout test methods: ${testMethodsStatistic.sumBy { it.timeout }}"
-        )
-        appendHtmlLine(
-            "Failing because of possible JVM crash test methods: ${testMethodsStatistic.sumBy { it.crashes }}"
-        )
-        appendHtmlLine("Not generated because of internal errors test methods: $overallErrors")
-    }
 
-    // TODO: should we use TsvWriter from univocity instead of this manual implementation?
-    fun getFileContent(): String =
-        (listOf(getHeader()) + getLines()).joinToString(System.lineSeparator())
-
-    private fun getHeader(): String {
-        val columnNames = listOf(
-            "Executable/Number of test methods",
-            SUCCESSFUL,
-            FAILING,
-            TIMEOUT,
-            CRASH,
-            "Errors tests"
-        )
-
-        return columnNames.joinToString(TAB_SEPARATOR)
-    }
-
-    private fun getLines(): List<String> =
-        executables.map { executable ->
-            val testMethodStatistic = executable.countTestMethods()
-            with(testMethodStatistic) {
-                listOf(
-                    executable,
-                    successful,
-                    failing,
-                    timeout,
-                    crashes,
-                    executable.countErrors()
-                ).joinToString(TAB_SEPARATOR)
-            }
+        if (!isShort) {
+            appendHtmlLine(detailedStatistics)
         }
+    }
+
+    override fun toString(): String = toString(false)
 
     private fun UtMethod<*>.countTestMethods(): TestMethodStatistic = TestMethodStatistic(
         testMethodsNumber(successfulExecutions),
@@ -290,10 +275,5 @@ data class TestsGenerationReport(
 
     private data class TestMethodStatistic(val successful: Int, val failing: Int, val timeout: Int, val crashes: Int) {
         val count: Int = successful + failing + timeout + crashes
-    }
-
-    companion object {
-        private const val TAB_SEPARATOR: String = "\t"
-        const val EXTENSION: String = ".tsv"
     }
 }

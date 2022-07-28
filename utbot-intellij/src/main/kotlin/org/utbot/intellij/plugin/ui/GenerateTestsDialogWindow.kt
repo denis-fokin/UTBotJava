@@ -4,35 +4,6 @@ package org.utbot.intellij.plugin.ui
 
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.icons.AllIcons
-import org.utbot.common.PathUtil.toPath
-import org.utbot.framework.UtSettings
-import org.utbot.framework.codegen.ForceStaticMocking
-import org.utbot.framework.codegen.Junit4
-import org.utbot.framework.codegen.Junit5
-import org.utbot.framework.codegen.NoStaticMocking
-import org.utbot.framework.codegen.ParametrizedTestSource
-import org.utbot.framework.codegen.StaticsMocking
-import org.utbot.framework.codegen.TestFramework
-import org.utbot.framework.codegen.TestNg
-import org.utbot.framework.codegen.model.util.MOCKITO_EXTENSIONS_FILE_CONTENT
-import org.utbot.framework.codegen.model.util.MOCKITO_EXTENSIONS_STORAGE
-import org.utbot.framework.codegen.model.util.MOCKITO_MOCKMAKER_FILE_NAME
-import org.utbot.framework.plugin.api.CodeGenerationSettingItem
-import org.utbot.framework.plugin.api.CodegenLanguage
-import org.utbot.framework.plugin.api.MockFramework
-import org.utbot.framework.plugin.api.MockFramework.MOCKITO
-import org.utbot.framework.plugin.api.MockStrategyApi
-import org.utbot.framework.plugin.api.TreatOverflowAsError
-import org.utbot.intellij.plugin.settings.Settings
-import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
-import org.utbot.intellij.plugin.ui.utils.LibrarySearchScope
-import org.utbot.intellij.plugin.ui.utils.findFrameworkLibrary
-import org.utbot.intellij.plugin.ui.utils.getOrCreateTestResourcesPath
-import org.utbot.intellij.plugin.ui.utils.kotlinTargetPlatform
-import org.utbot.intellij.plugin.ui.utils.parseVersion
-import org.utbot.intellij.plugin.ui.utils.testResourceRootTypes
-import org.utbot.intellij.plugin.ui.utils.addSourceRootIfAbsent
-import org.utbot.intellij.plugin.ui.utils.testRootType
 import com.intellij.ide.impl.ProjectNewWindowDoNotAskOption
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.WriteCommandAction
@@ -64,9 +35,11 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore.urlToPath
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.impl.FakeVirtualFile
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiMethod
+import com.intellij.psi.SyntheticElement
 import com.intellij.refactoring.PackageWrapper
 import com.intellij.refactoring.ui.MemberSelectionTable
 import com.intellij.refactoring.ui.PackageNameReferenceEditorCombo
@@ -100,21 +73,55 @@ import com.intellij.util.ui.JBUI.Borders.merge
 import com.intellij.util.ui.JBUI.scale
 import com.intellij.util.ui.JBUI.size
 import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.components.BorderLayoutPanel
+import org.jetbrains.concurrency.Promise
+import org.jetbrains.concurrency.thenRun
+import org.jetbrains.kotlin.asJava.classes.KtUltraLightClass
+import org.utbot.common.filterWhen
+import org.utbot.common.PathUtil.toPath
+import org.utbot.framework.UtSettings
+import org.utbot.framework.codegen.ForceStaticMocking
+import org.utbot.framework.codegen.Junit4
+import org.utbot.framework.codegen.Junit5
+import org.utbot.framework.codegen.NoStaticMocking
+import org.utbot.framework.codegen.ParametrizedTestSource
+import org.utbot.framework.codegen.StaticsMocking
+import org.utbot.framework.codegen.TestFramework
+import org.utbot.framework.codegen.TestNg
+import org.utbot.framework.codegen.model.util.MOCKITO_EXTENSIONS_FILE_CONTENT
+import org.utbot.framework.codegen.model.util.MOCKITO_EXTENSIONS_STORAGE
+import org.utbot.framework.codegen.model.util.MOCKITO_MOCKMAKER_FILE_NAME
+import org.utbot.framework.plugin.api.CodeGenerationSettingItem
+import org.utbot.framework.plugin.api.CodegenLanguage
+import org.utbot.framework.plugin.api.MockFramework
+import org.utbot.framework.plugin.api.MockFramework.MOCKITO
+import org.utbot.framework.plugin.api.MockStrategyApi
+import org.utbot.framework.plugin.api.TreatOverflowAsError
+import org.utbot.framework.util.Conflict
 import org.utbot.intellij.plugin.models.GenerateTestsModel
 import org.utbot.intellij.plugin.models.jUnit4LibraryDescriptor
 import org.utbot.intellij.plugin.models.jUnit5LibraryDescriptor
+import org.utbot.intellij.plugin.models.mockitoCoreLibraryDescriptor
 import org.utbot.intellij.plugin.models.packageName
 import org.utbot.intellij.plugin.models.testNgLibraryDescriptor
-import com.intellij.util.ui.components.BorderLayoutPanel
-import org.jetbrains.concurrency.Promise
-import org.utbot.intellij.plugin.models.mockitoCoreLibraryDescriptor
+import org.utbot.intellij.plugin.settings.Settings
+import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
+import org.utbot.intellij.plugin.ui.utils.LibrarySearchScope
+import org.utbot.intellij.plugin.ui.utils.addSourceRootIfAbsent
+import org.utbot.intellij.plugin.ui.utils.allLibraries
+import org.utbot.intellij.plugin.ui.utils.findFrameworkLibrary
+import org.utbot.intellij.plugin.ui.utils.getOrCreateTestResourcesPath
+import org.utbot.intellij.plugin.ui.utils.kotlinTargetPlatform
+import org.utbot.intellij.plugin.ui.utils.parseVersion
+import org.utbot.intellij.plugin.ui.utils.testResourceRootTypes
+import org.utbot.intellij.plugin.ui.utils.testRootType
 import org.utbot.intellij.plugin.util.AndroidApiHelper
 import java.awt.BorderLayout
 import java.awt.Color
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.Objects
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
@@ -122,9 +129,6 @@ import javax.swing.JComponent
 import javax.swing.JList
 import javax.swing.JPanel
 import kotlin.streams.toList
-import org.jetbrains.concurrency.thenRun
-import org.jetbrains.kotlin.asJava.classes.KtUltraLightClass
-import org.utbot.intellij.plugin.ui.utils.allLibraries
 
 private const val RECENTS_KEY = "org.utbot.recents"
 
@@ -189,20 +193,22 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
         MockFramework.allItems.forEach {
             it.isInstalled = findFrameworkLibrary(model.project, model.testModule, it) != null
         }
-        StaticsMocking.allItems.forEach { it.isConfigured = staticsMockingConfigured() }
-
+        StaticsMocking.allItems.forEach {
+            it.isConfigured = staticsMockingConfigured()
+        }
 
         // Configure notification urls callbacks
         TestsReportNotifier.urlOpeningListener.callbacks[TestReportUrlOpeningListener.mockitoSuffix]?.plusAssign {
-            if (createMockFrameworkNotificationDialog() == Messages.YES) {
-                configureMockFramework()
-            }
+            configureMockFramework()
         }
 
         TestsReportNotifier.urlOpeningListener.callbacks[TestReportUrlOpeningListener.mockitoInlineSuffix]?.plusAssign {
-            if (createStaticsMockingNotificationDialog() == Messages.YES) {
-                configureStaticMocking()
-            }
+            configureStaticMocking()
+        }
+
+        TestReportUrlOpeningListener.callbacks[TestReportUrlOpeningListener.eventLogSuffix]?.plusAssign {
+            val twm = ToolWindowManager.getInstance(model.project)
+            twm.getToolWindow("Event Log")?.activate(null)
         }
 
         init()
@@ -300,8 +306,11 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
     }
 
     private fun findTestPackageComboValue(): String {
-        val packageNames = model.srcClasses.map { it.packageName }.distinct()
-        return if (packageNames.size == 1) packageNames.first() else SAME_PACKAGE_LABEL
+        return if (!model.isMultiPackage) {
+            model.srcClasses.first().packageName
+        } else {
+            SAME_PACKAGE_LABEL
+        }
     }
 
     /**
@@ -362,6 +371,7 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
         val items: List<MemberInfo>
         if (srcClasses.size == 1) {
             items = TestIntegrationUtils.extractClassMethods(srcClasses.single(), false)
+                .filterWhen(UtSettings.skipTestGenerationForSyntheticMethods) { it.member !is SyntheticElement }
             updateMethodsTable(items)
         } else {
             items = srcClasses.map { MemberInfo(it) }
@@ -453,6 +463,7 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
             model.hangingTestsTimeout = hangingTestsTimeout
             model.forceStaticMocking = forceStaticMocking
             model.chosenClassesToMockAlways = chosenClassesToMockAlways()
+            model.fuzzingValue = fuzzingValue
             UtSettings.treatOverflowAsError = treatOverflowAsError == TreatOverflowAsError.AS_ERROR
         }
 
@@ -558,7 +569,7 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
         try {
             val contentEntry = modifiableModel.contentEntries
                 .filterNot { it.file == null }
-                .firstOrNull { VfsUtil.isAncestor(it.file!!, testSourceRoot, true) }
+                .firstOrNull { VfsUtil.isAncestor(it.file!!, testSourceRoot, false) }
                 ?: return false
 
             contentEntry.addSourceRootIfAbsent(
@@ -593,7 +604,6 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
         codegenLanguages.item =
             if (model.srcClasses.all { it is KtUltraLightClass }) CodegenLanguage.KOTLIN else CodegenLanguage.JAVA
 
-
         val installedTestFramework = TestFramework.allItems.singleOrNull { it.isInstalled }
         currentFrameworkItem = when (parametrizedTestSources.item) {
             ParametrizedTestSource.DO_NOT_PARAMETRIZE -> installedTestFramework ?: settings.testFramework
@@ -619,29 +629,21 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
     //region configure frameworks
 
     private fun configureTestFrameworkIfRequired() {
-        val frameworkNotInstalled = !testFrameworks.item.isInstalled
-
-        if (frameworkNotInstalled && createTestFrameworkNotificationDialog() == Messages.YES) {
+        if (!testFrameworks.item.isInstalled) {
             configureTestFramework()
         }
 
-        model.hasTestFrameworkConflict = TestFramework.allItems.count { it.isInstalled  } > 1
+        model.conflictTriggers[Conflict.TestFrameworkConflict] = TestFramework.allItems.count { it.isInstalled  } > 1
     }
 
     private fun configureMockFrameworkIfRequired() {
-        val frameworkNotInstalled =
-            mockStrategies.item != MockStrategyApi.NO_MOCKS && !MOCKITO.isInstalled
-
-        if (frameworkNotInstalled && createMockFrameworkNotificationDialog() == Messages.YES) {
+        if (mockStrategies.item != MockStrategyApi.NO_MOCKS && !MOCKITO.isInstalled) {
             configureMockFramework()
         }
     }
 
     private fun configureStaticMockingIfRequired() {
-        val frameworkNotConfigured =
-            staticsMocking.item != NoStaticMocking && !staticsMocking.item.isConfigured
-
-        if (frameworkNotConfigured && createStaticsMockingNotificationDialog() == Messages.YES) {
+        if (staticsMocking.item != NoStaticMocking && !staticsMocking.item.isConfigured) {
             configureStaticMocking()
         }
     }
@@ -663,15 +665,6 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
         addDependency(model.testModule, libraryDescriptor)
             .onError { selectedTestFramework.isInstalled = false }
     }
-
-    private fun createTestFrameworkNotificationDialog() = Messages.showYesNoDialog(
-        """Selected test framework ${testFrameworks.item.displayName} is not installed into current module. 
-            |Would you like to install it now?""".trimMargin(),
-        title,
-        "Yes",
-        "No",
-        Messages.getQuestionIcon(),
-    )
 
     private fun configureMockFramework() {
         val selectedMockFramework = MOCKITO
@@ -748,24 +741,6 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
             }
         }
     }
-
-    private fun createMockFrameworkNotificationDialog() = Messages.showYesNoDialog(
-        """Mock framework ${MOCKITO.displayName} is not installed into current module. 
-            |Would you like to install it now?""".trimMargin(),
-        title,
-        "Yes",
-        "No",
-        Messages.getQuestionIcon(),
-    )
-
-    private fun createStaticsMockingNotificationDialog() = Messages.showYesNoDialog(
-        """A framework ${MOCKITO.displayName} is not configured to mock static methods.
-            |Would you like to configure it now?""".trimMargin(),
-        title,
-        "Yes",
-        "No",
-        Messages.getQuestionIcon(),
-    )
 
     //endregion
 
