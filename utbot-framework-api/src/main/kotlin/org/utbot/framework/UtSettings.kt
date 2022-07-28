@@ -212,7 +212,7 @@ object UtSettings {
      *
      * True by default.
      */
-    var useConcreteExecution by getBooleanProperty(false) // FIXME: Turn off for a test
+    var useConcreteExecution by getBooleanProperty(true)
 
     /**
      * Enable check of full coverage for methods with code generations tests.
