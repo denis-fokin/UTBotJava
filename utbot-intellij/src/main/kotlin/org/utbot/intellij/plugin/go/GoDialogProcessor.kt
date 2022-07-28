@@ -51,20 +51,30 @@ object GoDialogProcessor {
         )
     }
 
+    private object ProgressIndicatorConstants {
+        const val READ_FILES_FRACTION = 0.05
+        const val GENERATE_CODE_FRACTION = 0.1
+        const val GENERATE_TEST_CASES_FRACTION = 1.0 - READ_FILES_FRACTION - GENERATE_CODE_FRACTION
+    }
+
     private fun createTests(project: Project, model: GoTestsModel) {
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Generate Go tests") {
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = false
                 indicator.text = "Generate tests: read files"
+                indicator.fraction = 0.0
 
                 val goFunctionsOrMethods = model.selectedFunctionsOrMethods
+                indicator.fraction = indicator.fraction.coerceAtLeast(ProgressIndicatorConstants.READ_FILES_FRACTION)
 
                 val testCasesByFile = mutableMapOf<GoFile, MutableList<GoFuzzedFunctionOrMethodTestCase>>()
-
                 goFunctionsOrMethods.forEachIndexed { processedFunctionsOrMethods, goFunctionOrMethod ->
                     indicator.text = "Generate test cases for ${goFunctionOrMethod.name}"
-                    indicator.fraction =
-                        indicator.fraction.coerceAtLeast(0.9 * processedFunctionsOrMethods / goFunctionsOrMethods.size)
+                    indicator.fraction = indicator.fraction.coerceAtLeast(
+                        ProgressIndicatorConstants.READ_FILES_FRACTION +
+                            ProgressIndicatorConstants.GENERATE_TEST_CASES_FRACTION *
+                            processedFunctionsOrMethods / goFunctionsOrMethods.size
+                    )
                     readAction { // to read PSI-tree or else "Read access" exception
                         val testCases = generateTestCases(goFunctionOrMethod.toGoFunctionOrMethodNode())
                         val file = goFunctionOrMethod.containingFile
@@ -73,7 +83,11 @@ object GoDialogProcessor {
                     }
                 }
 
-                indicator.fraction = indicator.fraction.coerceAtLeast(0.9)
+                indicator.fraction =
+                    indicator.fraction.coerceAtLeast(
+                        ProgressIndicatorConstants.READ_FILES_FRACTION +
+                            ProgressIndicatorConstants.GENERATE_TEST_CASES_FRACTION
+                    )
                 indicator.text = "Generate code for tests"
                 // Commented out to generate tests for collected executions even if action was canceled.
                 // indicator.checkCanceled()
