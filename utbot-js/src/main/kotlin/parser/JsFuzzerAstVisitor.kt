@@ -15,14 +15,14 @@ object JsFuzzerAstVisitor : NodeVisitor<LexicalContext>(LexicalContext()) {
     val fuzzedConcreteValues = mutableSetOf<FuzzedConcreteValue>()
 
     override fun enterBinaryNode(binaryNode: BinaryNode?): Boolean {
-        binaryNode?.let { binaryNode ->
+        binaryNode?.let { binNode ->
             val compOp = """>=|<=|>|<|==|!=""".toRegex()
-            val curOp = compOp.find(binaryNode.toString())?.value
+            val curOp = compOp.find(binNode.toString())?.value
             val currentFuzzedOp = FuzzedOp.values().find { curOp == it.sign } ?: FuzzedOp.NONE
             lastFuzzedOpGlobal = currentFuzzedOp
-            validateNode(binaryNode.lhs)
+            validateNode(binNode.lhs)
             lastFuzzedOpGlobal = lastFuzzedOpGlobal.reverseOrElse { FuzzedOp.NONE }
-            validateNode(binaryNode.rhs)
+            validateNode(binNode.rhs)
         }
         return false
     }

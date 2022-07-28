@@ -51,6 +51,7 @@ import soot.jimple.JimpleBody
 import soot.jimple.Stmt
 import java.io.File
 import java.lang.reflect.Modifier
+import org.utbot.framework.plugin.api.util.jsUndefinedClassId
 import kotlin.jvm.internal.CallableReference
 import kotlin.reflect.KCallable
 import kotlin.reflect.KClass
@@ -568,7 +569,6 @@ open class JsClassId(
     private val methods: Sequence<JsMethodId> = emptySequence(),
     private val constructors: Sequence<JsConstructorId> = emptySequence(),
 ) : ClassId(jsName) {
-
     override val simpleName: String
         get() = jsName
 

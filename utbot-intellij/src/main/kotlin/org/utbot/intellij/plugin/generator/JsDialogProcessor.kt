@@ -1,6 +1,8 @@
 package org.utbot.intellij.plugin.generator
 
 import com.intellij.lang.ecmascript6.psi.ES6Class
+import com.intellij.lang.javascript.psi.JSFile
+import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.refactoring.util.JSMemberInfo
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
@@ -10,20 +12,22 @@ import com.oracle.js.parser.Parser
 import com.oracle.js.parser.ScriptEnvironment
 import com.oracle.js.parser.Source
 import com.oracle.js.parser.ir.FunctionNode
-import com.oracle.js.parser.ir.VarNode
 import parser.JsFuzzerAstVisitor
 import fuzzer.JsFuzzer.jsFuzzing
-import fuzzer.FuzzerUtils
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.Value
-import org.utbot.framework.plugin.api.*
-import org.utbot.framework.plugin.api.util.jsUndefinedClassId
+import org.utbot.framework.plugin.api.JsClassId
+import org.utbot.framework.plugin.api.JsMethodId
+import org.utbot.framework.plugin.api.JsPrimitiveModel
+import org.utbot.framework.plugin.api.UtExecutionSuccess
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.names.ModelBasedNameSuggester
 import org.utbot.intellij.plugin.ui.JsDialogWindow
 import org.utbot.intellij.plugin.models.JsTestsModel
 import org.utbot.intellij.plugin.ui.utils.testModule
+import parser.JsFunctionAstVisitor
+import utils.TernService
 import kotlin.random.Random
 
 object JsDialogProcessor {
@@ -33,11 +37,12 @@ object JsDialogProcessor {
         srcModule: Module,
         fileMethods: Set<JSMemberInfo>,
         focusedMethod: JSMemberInfo?,
+        containingFilePath: String,
     ) {
         val dialogProcessor = createDialog(project, srcModule, fileMethods, focusedMethod)
         if (!dialogProcessor.showAndGet()) return
 
-        createTests(dialogProcessor.model)
+        createTests(dialogProcessor.model, containingFilePath)
     }
 
     private fun createDialog(
@@ -59,18 +64,26 @@ object JsDialogProcessor {
         )
     }
 
-    private fun createTests(model: JsTestsModel) {
+    private fun createTests(model: JsTestsModel, containingFilePath: String) {
+        val ternService = TernService(
+            model.project.basePath ?: throw IllegalStateException("Can't access project path."),
+            containingFilePath
+        )
         model.selectedMethods?.forEach { jsMemberInfo ->
-            // TODO: needed for leading comments, find a place for parentPsi.
-            val parentPsi = PsiTreeUtil.getParentOfType(jsMemberInfo.member, ES6Class::class.java)
-            val funcNode = getFunctionNode(jsMemberInfo)
-            FuzzerUtils.createMapOfTypedParams()
-            // TODO: think of jsUndefinedClassId usages
-            val execId = MethodId(
+            var parentPsi = PsiTreeUtil.getParentOfType(jsMemberInfo.member, ES6Class::class.java)
+            if (parentPsi?.name == null || parentPsi.name == "toplevelHack") {
+                parentPsi = null
+            }
+            val funcNode = getFunctionNode(jsMemberInfo, parentPsi?.name)
+            // TODO: for some reason this won't extract attributes. Fix.
+            val attributeList = (jsMemberInfo.member as JSFunction).attributeList
+            val methodTypes = ternService.processMethod(parentPsi?.name, funcNode.name.toString())
+            val execId = JsMethodId(
                 JsClassId(parentPsi?.name ?: "undefined"),
                 funcNode.name.toString(),
-                jsUndefinedClassId,
-                funcNode.parameters.toList().map { JsMultipleClassId("number|string") }
+                methodTypes.returnType,
+                methodTypes.parameters,
+                attributeList?.attributes?.find { it.text.contains("static") } != null
             )
             funcNode.body.accept(JsFuzzerAstVisitor)
             val methodUnderTestDescription = FuzzedMethodDescription(execId, JsFuzzerAstVisitor.fuzzedConcreteValues).apply {
@@ -132,17 +145,18 @@ object JsDialogProcessor {
         return callString
     }
 
-    private fun getFunctionNode(focusedMethod: JSMemberInfo): FunctionNode {
-        val funFixString = "function " + focusedMethod.member.text
+    private fun getFunctionNode(focusedMethod: JSMemberInfo, parentClassName: String?): FunctionNode {
+        val psiFile = PsiTreeUtil.getParentOfType(focusedMethod.member, JSFile::class.java) ?: throw IllegalStateException()
         Thread.currentThread().contextClassLoader = Context::class.java.classLoader
         val parser = Parser(
             ScriptEnvironment.builder().build(),
-            Source.sourceFor("func_dec", funFixString),
+            Source.sourceFor("jsFile", psiFile.text),
             ErrorManager.ThrowErrorManager()
         )
-        val functionNode = parser.parse()
-        val block = functionNode.body
-        return (block.statements[0] as VarNode).init as FunctionNode
+        val fileNode = parser.parse()
+        val visitor = JsFunctionAstVisitor(focusedMethod.member.name!!, parentClassName ?: "toplevelHack")
+        fileNode.accept(visitor)
+        return visitor.targetFunctionNode
     }
 
 }

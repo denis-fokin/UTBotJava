@@ -19,6 +19,7 @@ import org.utbot.intellij.plugin.ui.components.TestFolderComboWithBrowseButton
 import java.awt.BorderLayout
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
+import utils.JsCmdExec
 import kotlin.concurrent.thread
 
 
@@ -95,9 +96,7 @@ class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
     private fun configureTestFramework() {
         val selectedTestFramework = testFrameworks.item
         selectedTestFramework.isInstalled = true
-        val packageInstallBuilder = ProcessBuilder("cmd.exe", "/c", "npm install -l ${selectedTestFramework.displayName.toLowerCase()}")
-        val packageInstallProcess = packageInstallBuilder.start()
-        packageInstallProcess.waitFor()
+        JsCmdExec.runCommand("npm install -l ${selectedTestFramework.displayName.toLowerCase()}")
     }
 
     private fun configureTestFrameworkIfRequired() {
@@ -124,9 +123,7 @@ class JsDialogWindow(val model: JsTestsModel) : DialogWrapper(model.project) {
     )
 
     private fun findFrameworkLibrary(npmPackageName: String): Boolean {
-        val nodeBuilder = ProcessBuilder("cmd.exe", "/c", "npm list")
-        val nodeProcess = nodeBuilder.start()
-        val bufferedReader = nodeProcess.inputStream.bufferedReader()
+        val bufferedReader = JsCmdExec.runCommand("npm list")
         val checkForPackageText = bufferedReader.readText()
         bufferedReader.close()
         if (checkForPackageText == "") {

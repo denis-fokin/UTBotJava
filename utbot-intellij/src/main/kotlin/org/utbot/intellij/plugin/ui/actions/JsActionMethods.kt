@@ -27,16 +27,18 @@ object JsActionMethods {
         val methods: Set<JSMemberInfo>,
         val focusedMethod: JSMemberInfo?,
         val module: Module,
+        val containingFilePath: String
     )
 
     fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val (methods, focusedMethod, module) = getPsiTargets(e) ?: return
+        val (methods, focusedMethod, module, containingFilePath) = getPsiTargets(e) ?: return
         JsDialogProcessor.createDialogAndGenerateTests(
             project,
             module,
             methods,
-            focusedMethod
+            focusedMethod,
+            containingFilePath,
         )
     }
 
@@ -46,14 +48,15 @@ object JsActionMethods {
 
     private fun getPsiTargets(e: AnActionEvent): PsiTargets? {
         e.project ?: return null
+        val virtualFile = (e.getData(CommonDataKeys.VIRTUAL_FILE) ?: return null).path
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return null
         val file = e.getData(CommonDataKeys.PSI_FILE) as? JSFile ?: return null
         val element = findPsiElement(file, editor) ?: return null
         val module = element.module ?: return null
         val focusedMethod = getContainingMethod(element)
-        containingClass(element)?.let { it ->
-            val methods = it.functions ?: return null
-            val memberInfos = generateMemberInfo(e.project!!, methods.toList())
+        containingClass(element)?.let {
+            val methods = it.functions
+            val memberInfos = generateMemberInfo(e.project!!, methods.toList(), it)
             val focusedMethodMI = memberInfos.find { member ->
                 member.member?.name == focusedMethod?.name
             }
@@ -61,6 +64,7 @@ object JsActionMethods {
                 memberInfos,
                 focusedMethodMI,
                 module,
+                virtualFile,
             )
         }
         val memberInfos = generateMemberInfo(e.project!!, file.statements.filterIsInstance<JSFunction>())
@@ -70,7 +74,8 @@ object JsActionMethods {
         return PsiTargets(
             memberInfos,
             focusedMethodMI,
-            module
+            module,
+            virtualFile,
         )
     }
 
@@ -98,11 +103,10 @@ object JsActionMethods {
         var strBuilder = "\n"
         val filteredMethods = methods.filterNot { method -> method.name == "constructor" }
         filteredMethods.forEach {
-            strBuilder += it.text
+            strBuilder += it.text.replace("function ", "")
         }
-        //Creating a class that "can't" exist.
-        //Needs further testing if such class exists in user's code.
-        return "class askfajsghalwig {$strBuilder}"
+        // Creating a class with random name. It won't affect user's code since it is created in abstract PsiFile.
+        return "class toplevelHack {$strBuilder}"
     }
 
     /*
@@ -110,7 +114,12 @@ object JsActionMethods {
         generate a PsiFile with it, then extract ES6Class from it, then extract MemberInfos.
         Created for top-level functions that don't have a parent class.
      */
-    private fun generateMemberInfo(project: Project, methods: List<JSFunction>): Set<JSMemberInfo> {
+    private fun generateMemberInfo(project: Project, methods: List<JSFunction>, jsClass: JSClass? = null): Set<JSMemberInfo> {
+       jsClass?.let {
+           val res = mutableListOf<JSMemberInfo>()
+           JSMemberInfo.extractClassMembers(it, res) { true }
+           return res.toSet()
+       }
         val strClazz = buildClassStringFromMethods(methods)
         val abstractPsiFile = PsiFileFactory.getInstance(project)
             .createFileFromText(jsLanguage, strClazz)

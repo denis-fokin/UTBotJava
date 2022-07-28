@@ -3,7 +3,6 @@ package fuzzer.providers
 import org.utbot.framework.plugin.api.JsClassId
 import org.utbot.framework.plugin.api.JsPrimitiveModel
 import org.utbot.framework.plugin.api.util.isJsPrimitive
-import org.utbot.framework.plugin.api.util.jsUndefinedClassId
 import org.utbot.fuzzer.*
 
 object JsConstantsModelProvider : ModelProvider {

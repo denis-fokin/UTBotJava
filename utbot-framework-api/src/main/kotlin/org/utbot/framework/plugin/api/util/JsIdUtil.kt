@@ -16,6 +16,14 @@ val jsPrimitives = setOf(
     jsDoubleClassId,
 )
 
+val jsBasic = setOf(
+    jsNumberClassId,
+    jsBooleanClassId,
+    jsDoubleClassId,
+    jsUndefinedClassId,
+    jsStringClassId,
+)
+
 fun ClassId.toJsClassId() =
     when (this) {
         intClassId -> jsNumberClassId
@@ -26,6 +34,8 @@ fun ClassId.toJsClassId() =
         else -> jsUndefinedClassId
     }
 
+val JsClassId.isJsBasic: Boolean
+    get() = this in jsBasic
 
 val JsClassId.isJsPrimitive: Boolean
     get() = this in jsPrimitives

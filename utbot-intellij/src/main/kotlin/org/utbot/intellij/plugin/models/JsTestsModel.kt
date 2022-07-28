@@ -18,4 +18,5 @@ class JsTestsModel(
     testModule
 ) {
     lateinit var testFramework: TestFramework
+    lateinit var containingFilePath: String
 }
