@@ -1,7 +1,7 @@
 package org.utbot.go.providers
 
 import org.utbot.framework.plugin.api.GoUtPrimitiveModel
-import org.utbot.framework.plugin.api.util.goStringClassId
+import org.utbot.framework.plugin.api.util.goStringTypeId
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedOp
 import org.utbot.fuzzer.FuzzedParameter
@@ -17,7 +17,7 @@ object GoStringConstantModelProvider : ModelProvider {
         val random = Random(72923L)
         description.concreteValues
             .asSequence()
-            .filter { (classId, _) -> classId == goStringClassId }
+            .filter { (classId, _) -> classId == goStringTypeId }
             .forEach { (_, value, op) ->
                 listOf(value, mutate(random, value as? String, op))
                     .asSequence()

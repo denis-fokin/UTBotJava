@@ -1,5 +1,6 @@
 package org.utbot.go.executor
 
+import org.utbot.framework.plugin.api.GoTypeId
 import org.utbot.framework.plugin.api.GoUtModel
 
 interface GoUtExecutionResult
@@ -12,4 +13,7 @@ data class GoUtExecutionSuccess(override val models: List<GoUtModel>) : GoUtExec
 
 data class GoUtExecutionWithNonNullError(override val models: List<GoUtModel>) : GoUtExecutionCompleted
 
-class GoUtPanicFailure(val failureMessage: String?): GoUtExecutionResult
+data class GoUtPanicFailure(
+    val panicMessageModel: GoUtModel,
+    val panicMessageOriginalGoType: GoTypeId
+) : GoUtExecutionResult

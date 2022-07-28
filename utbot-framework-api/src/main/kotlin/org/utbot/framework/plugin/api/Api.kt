@@ -559,7 +559,7 @@ val ArrayType.id: ClassId
         return ClassId("[$elementTypeName", elementId)
     }
 
-// TODO: rename into GoTypeId?
+// Base class of Go types for compatibility with UTBot framework.
 sealed class GoClassId(private val goName: String) : ClassId(goName) {
     override val simpleName: String
         get() = goName
@@ -567,17 +567,20 @@ sealed class GoClassId(private val goName: String) : ClassId(goName) {
     override fun toString(): String = goName
 }
 
-// GoClassId for most cases.
-class GoCommonClassId(
+// Represents real Go type.
+class GoTypeId(
     goName: String,
     val correspondingKClass: KClass<out Any>? = null,
-    val isErrorType: Boolean = false
+    val isErrorType: Boolean = goName == "error"
 ): GoClassId(goName)
 
 // Wraps tuple of several classes into one GoClassId. It helps to handle return types of Go functions and methods.
-class GoSyntheticClassesTupleId(val classes: List<GoCommonClassId>): GoClassId("synthetic_classes_tuple") {
-    override fun toString(): String = classes.joinToString(separator = ", ", prefix = "(", postfix = ")")
+class GoSyntheticMultipleTypesId(val types: List<GoTypeId>): GoClassId("synthetic_multiple_types") {
+    override fun toString(): String = types.joinToString(separator = ", ", prefix = "(", postfix = ")")
 }
+
+// There is no void type in Go; therefore, this class solves function or method returns nothing case.
+class GoSyntheticNoTypeId: GoClassId("")
 
 open class GoUtModel(
     override val classId: GoClassId
@@ -585,14 +588,14 @@ open class GoUtModel(
 
 data class GoUtPrimitiveModel(
     val value: Any,
-    override val classId: GoCommonClassId
+    override val classId: GoTypeId
 ) : GoUtModel(classId) {
 
     // TODO: get rid of this constructor to make models more precise
     constructor(value: Any) : this(value, primitiveModelValueToGoClassId(value))
 
     override fun toString() =
-        if (classId == goStringClassId) {
+        if (classId == goStringTypeId) {
             "\"$value\""
         } else {
             value.toString()
@@ -601,26 +604,22 @@ data class GoUtPrimitiveModel(
 
 // TODO: maybe add unsigned kotlin types
 private fun primitiveModelValueToGoClassId(value: Any) = when (value) {
-    is Byte -> goInt8ClassId
-    is Short -> goInt16ClassId
-    is Char -> goUint16ClassId
-    is Int -> goInt32ClassId
-    is Long -> goInt64ClassId
-    is Float -> goFloat32ClassId
-    is Double -> goFloat64ClassId
-    is Boolean -> goBoolClassId
-    is String -> goStringClassId
+    is Byte -> goInt8TypeId
+    is Short -> goInt16TypeId
+    is Char -> goUint16TypeId
+    is Int -> goInt32TypeId
+    is Long -> goInt64TypeId
+    is Float -> goFloat32TypeId
+    is Double -> goFloat64TypeId
+    is Boolean -> goBoolTypeId
+    is String -> goStringTypeId
     else -> error("undefined class")
 }
 
-class GoUtNullModel(
+class GoUtNilModel(
     classId: GoClassId
 ) : GoUtModel(classId) {
     override fun toString() = "nil"
-}
-
-fun nullableToGoUtModel(value: Any?, goCommonClassId: GoCommonClassId): GoUtModel {
-    return if(value == null)GoUtNullModel(goCommonClassId) else GoUtPrimitiveModel(value, goCommonClassId)
 }
 
 /**

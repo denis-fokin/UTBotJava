@@ -1,8 +1,9 @@
 package org.utbot.go
 
 import org.utbot.framework.plugin.api.GoClassId
-import org.utbot.framework.plugin.api.GoCommonClassId
-import org.utbot.framework.plugin.api.GoSyntheticClassesTupleId
+import org.utbot.framework.plugin.api.GoTypeId
+import org.utbot.framework.plugin.api.GoSyntheticMultipleTypesId
+import org.utbot.framework.plugin.api.util.goVoidTypeId
 import org.utbot.fuzzer.FuzzedConcreteValue
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedValue
@@ -28,7 +29,7 @@ data class GoFunctionOrMethodParameterNode(val name: String, val type: GoClassId
 
 data class GoFunctionOrMethodNode(
     val name: String,
-    val returnType: GoClassId,
+    val returnTypes: List<GoTypeId>,
     val parameters: List<GoFunctionOrMethodParameterNode>,
     val body: GoBodyNode,
     val containingFileNode: GoFileNode
@@ -36,16 +37,14 @@ data class GoFunctionOrMethodNode(
     val parametersNames get() = parameters.map { it.name }
     val parametersTypes get() = parameters.map { it.type }
 
-    val returnCommonTypes: List<GoCommonClassId>
-        get() = if (returnType is GoSyntheticClassesTupleId) {
-            returnType.classes
-        } else {
-            listOf(returnType as GoCommonClassId)
-        }
+    val returnTypesAsGoClassId: GoClassId
+        get() = if (returnTypes.isEmpty()) goVoidTypeId
+        else if (returnTypes.size == 1) returnTypes.first()
+        else GoSyntheticMultipleTypesId(returnTypes)
 }
 
 fun GoFunctionOrMethodNode.toFuzzedMethodDescription(concreteValues: Collection<FuzzedConcreteValue>) =
-    FuzzedMethodDescription(name, returnType, parametersTypes, concreteValues).apply {
+    FuzzedMethodDescription(name, returnTypesAsGoClassId, parametersTypes, concreteValues).apply {
         compilableName = name
         val names = parametersNames
         parameterNameMap = { index -> names.getOrNull(index) }

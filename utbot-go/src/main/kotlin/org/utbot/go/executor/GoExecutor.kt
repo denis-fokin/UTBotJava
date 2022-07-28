@@ -2,10 +2,12 @@ package org.utbot.go.executor
 
 import mu.KotlinLogging
 import org.utbot.common.pid
-import org.utbot.framework.plugin.api.GoCommonClassId
-import org.utbot.framework.plugin.api.GoUtNullModel
+import org.utbot.framework.plugin.api.GoTypeId
+import org.utbot.framework.plugin.api.GoUtNilModel
 import org.utbot.framework.plugin.api.GoUtPrimitiveModel
-import org.utbot.framework.plugin.api.util.goStringClassId
+import org.utbot.framework.plugin.api.util.goAnyTypeId
+import org.utbot.framework.plugin.api.util.goStringTypeId
+import org.utbot.framework.plugin.api.util.isPrimitive
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.go.GoFunctionOrMethodNode
 import org.utbot.go.codegen.GoSimpleCodeGenerator
@@ -60,10 +62,10 @@ object GoExecutor {
             val executedProcess = runCatching {
                 val process = ProcessBuilder(command)
                     .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                    .redirectError(ProcessBuilder.Redirect.PIPE)
+                    .redirectErrorStream(true)
                     .directory(packageDirectoryFile)
                     .start().also {
-                        logger.debug { "GoExecutor process started with PID=${it.pid}" }
+                        logger.debug("GoExecutor process started with PID=${it.pid}")
                     }
                 process.waitFor()
                 process
@@ -74,13 +76,9 @@ object GoExecutor {
             }
             val exitCode = executedProcess.exitValue()
             if (exitCode != 0) {
-                println("ERRORS")
-                println(InputStreamReader(executedProcess.errorStream).readText())
-                println("\nSOUT")
-                println(InputStreamReader(executedProcess.inputStream).readText())
-
+                val processOutput = InputStreamReader(executedProcess.inputStream).readText()
                 throw RuntimeException(
-                    "Execution of ${functionOrMethodNode.name} in child process failed with non-zero exit code = $exitCode"
+                    "Execution of ${functionOrMethodNode.name} in child process failed with non-zero exit code = $exitCode:\n$processOutput"
                 )
             }
 
@@ -88,7 +86,7 @@ object GoExecutor {
             val functionOrMethodPanicOutput = executionErrorFile.readText()
 
             return mapToGoUtExecutionResult(
-                functionOrMethodNode.returnCommonTypes,
+                functionOrMethodNode.returnTypes,
                 functionOrMethodReturnOutput,
                 functionOrMethodPanicOutput
             )
@@ -118,7 +116,7 @@ object GoExecutor {
         val fileBuilder = GoSimpleCodeGenerator.GoFileCodeBuilder()
 
         fileBuilder.setPackage(functionOrMethodNode.containingFileNode.containingPackageName)
-        fileBuilder.setImports(listOf("bufio", "fmt", "io", "os", "testing"))
+        fileBuilder.setImports(listOf("bufio", "fmt", "io", "os", "testing", "reflect"))
 
         val checkErrorFunctionDeclaration = """
             func __checkErrorAndExitToUtGoExecutor__(err error) {
@@ -171,22 +169,23 @@ object GoExecutor {
         """.trimIndent()
 
         // rv = return values
-        val rvCount = functionOrMethodNode.returnCommonTypes.size
+        val rvCount = functionOrMethodNode.returnTypes.size
         val rvVariablesNames = (1..rvCount).map { "rv$it" }
 
         // TODO: support methods
-        val fuzzedFunctionCall = GoSimpleCodeGenerator.generateFuzzedFunctionCallSavedToVariables(
-            rvVariablesNames,
-            functionOrMethodNode,
-            fuzzedParametersValues
-        )
+        val fuzzedFunctionCall = if (rvCount == 0) {
+            GoSimpleCodeGenerator.generateFuzzedFunctionCall(functionOrMethodNode, fuzzedParametersValues)
+        } else {
+            GoSimpleCodeGenerator.generateFuzzedFunctionCallSavedToVariables(
+                rvVariablesNames,
+                functionOrMethodNode,
+                fuzzedParametersValues
+            )
+        }
 
-        val printRvVariablesCalls =
-            rvVariablesNames.joinToString(separator = ", true)\n\t", postfix = ", false)") {
-                "__printValueToUtGoExecutor__(outWriter, $it"
-            }
-
-        val executionTestDeclaration = """
+        val executionTestDeclarationSb = StringBuilder()
+        executionTestDeclarationSb.append(
+            """
             func ${createTestFunctionName(functionOrMethodNode.name)}(t *testing.T) {
                 outFile, outWriter := __createWriterToUtGoExecutorFile__("${Constants.EXECUTION_RESULT_OUTPUT_FILE_NAME}")
                 errFile, errWriter := __createWriterToUtGoExecutorFile__("${Constants.EXECUTION_RESULT_ERROR_FILE_NAME}")
@@ -195,7 +194,8 @@ object GoExecutor {
                 defer func() {
                     panicMessage := recover()
                     __printValueToUtGoExecutor__(errWriter, panicked, true)
-                    __printValueToUtGoExecutor__(errWriter, panicMessage, false)
+                    __printValueToUtGoExecutor__(errWriter, panicMessage, true)
+                    __printValueToUtGoExecutor__(errWriter, reflect.TypeOf(panicMessage), false)
             
                     __closeWriterToUtGoExecutorFile__(outFile, outWriter)
                     __closeWriterToUtGoExecutorFile__(errFile, errWriter)
@@ -203,10 +203,15 @@ object GoExecutor {
                 
                 $fuzzedFunctionCall
                 panicked = false
-                
-                $printRvVariablesCalls
-            }
+               
         """.trimIndent()
+        )
+
+        rvVariablesNames.forEachIndexed { index, variableName ->
+            val isLastPrintRvVariableCall = index == (rvVariablesNames.size - 1)
+            executionTestDeclarationSb.append("\n\t__printValueToUtGoExecutor__(outWriter, $variableName, ${!isLastPrintRvVariableCall})")
+        }
+        executionTestDeclarationSb.append("\n}")
 
         fileBuilder.addTopLevelElements(
             checkErrorFunctionDeclaration,
@@ -214,47 +219,59 @@ object GoExecutor {
             printValueFunctionDeclaration,
             createWriterFunctionDeclaration,
             closeWriterFunctionDeclaration,
-            executionTestDeclaration
+            executionTestDeclarationSb.toString()
         )
 
         return fileBuilder.buildCodeString()
     }
 
     private fun mapToGoUtExecutionResult(
-        returnCommonTypes: List<GoCommonClassId>,
+        returnCommonTypes: List<GoTypeId>,
         returnRawValuesOutput: String,
         panicRawValuesOutput: String
     ): GoUtExecutionResult {
 
-        val returnRawValues = returnRawValuesOutput.split(Constants.DELIMITER_CODE.toRegex())
+        val returnRawValues = if (returnRawValuesOutput.isEmpty()) {
+            emptyList()
+        } else {
+            returnRawValuesOutput.split(Constants.DELIMITER_CODE.toRegex())
+        }
         val panicRawValues = panicRawValuesOutput.split(Constants.DELIMITER_CODE.toRegex())
 
-        if (panicRawValues.size != 2) {
-            error("Panicked and panicMessage are expected in stderr.")
+        if (panicRawValues.size != 3) {
+            error("Panicked, panicMessage and panicMessageRawGoType are expected in stderr.")
         }
-        val (panicked, panicMessage) = panicRawValues
+        val (panicked, panicMessage, panicMessageRawGoType) = panicRawValues
         if (panicked.toBoolean()) {
-            return GoUtPanicFailure(if (panicMessage != Constants.NIL_VALUE_CODE) panicMessage else null)
+            if (panicMessage == Constants.NIL_VALUE_CODE) {
+                return GoUtPanicFailure(GoUtNilModel(goAnyTypeId), goAnyTypeId)
+            }
+            val panicMessageTypeId = GoTypeId(panicMessageRawGoType)
+            val panicMessageModel = if (panicMessageTypeId.isPrimitive) {
+                createGoUtPrimitiveModelFromRawValue(panicMessage, panicMessageTypeId)
+            } else {
+                GoUtPrimitiveModel(panicMessage, goStringTypeId)
+            }
+            return GoUtPanicFailure(panicMessageModel, panicMessageTypeId)
         }
 
         if (returnRawValues.size != returnCommonTypes.size) {
+            println(returnRawValuesOutput)
+            println(returnRawValues)
             error("Function or method completed execution must have as many return values as return types.")
         }
         var executedWithNonNullErrorString = false
         val returnValues = returnRawValues.zip(returnCommonTypes).map { (returnRawValue, returnType) ->
-
             if (nonNullErrorReceived(returnRawValue, returnType)) {
                 executedWithNonNullErrorString = true
             }
-
-            // TODO: support errors fairly, i. e. as structs; for now consider them as strings
-            val modelClassId = if (returnType.isErrorType) goStringClassId else returnType
-
             if (returnRawValue == Constants.NIL_VALUE_CODE) {
-                GoUtNullModel(modelClassId)
+                GoUtNilModel(returnType)
             } else {
+                // TODO: support errors fairly, i. e. as structs; for now consider them as strings
+                val nonNilModelTypeId = if (returnType.isErrorType) goStringTypeId else returnType
                 // TODO: support complex types
-                createGoUtPrimitiveModelFromRawValue(returnRawValue, modelClassId)
+                createGoUtPrimitiveModelFromRawValue(returnRawValue, nonNilModelTypeId)
             }
         }
 
@@ -265,12 +282,12 @@ object GoExecutor {
         }
     }
 
-    private fun nonNullErrorReceived(rawValue: String, classId: GoCommonClassId): Boolean {
+    private fun nonNullErrorReceived(rawValue: String, classId: GoTypeId): Boolean {
         return classId.isErrorType && rawValue != Constants.NIL_VALUE_CODE
     }
 
-    private fun createGoUtPrimitiveModelFromRawValue(rawValue: String, classId: GoCommonClassId): GoUtPrimitiveModel {
-        val value = when (classId.correspondingKClass) {
+    private fun createGoUtPrimitiveModelFromRawValue(rawValue: String, typeId: GoTypeId): GoUtPrimitiveModel {
+        val value = when (typeId.correspondingKClass) {
             Byte::class -> rawValue.toByte()
             Short::class -> rawValue.toShort()
             Char::class -> rawValue.toCharArray().firstOrNull() ?: rawValue
@@ -281,6 +298,6 @@ object GoExecutor {
             Boolean::class -> rawValue.toBoolean()
             else -> rawValue
         }
-        return GoUtPrimitiveModel(value, classId)
+        return GoUtPrimitiveModel(value, typeId)
     }
 }
