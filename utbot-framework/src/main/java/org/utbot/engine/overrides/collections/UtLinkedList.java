@@ -1,6 +1,5 @@
 package org.utbot.engine.overrides.collections;
 
-import org.utbot.api.mock.UtMock;
 import org.utbot.engine.overrides.UtArrayMock;
 import java.util.AbstractSequentialList;
 import java.util.Collection;
@@ -453,15 +452,12 @@ public class UtLinkedList<E> extends AbstractSequentialList<E>
         return new ReverseIteratorWrapper(elementData.end);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Stream<E> stream() {
         preconditionCheck();
 
         int size = elementData.end;
-        final Object[] toArray = elementData.toArray(0, size);
-        UtMock.disableClassCastExceptionCheck(toArray);
-        E[] data = (E[]) toArray;
+        E[] data = elementData.toCastedArray(0, size);
 
         return new UtStream<>(data, size);
     }

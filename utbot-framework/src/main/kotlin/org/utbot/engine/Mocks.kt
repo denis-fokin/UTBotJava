@@ -24,6 +24,7 @@ import soot.RefType
 import soot.Scene
 import soot.SootClass
 import soot.SootMethod
+import kotlin.reflect.KFunction4
 
 /**
  * Generates mock with address provided.
@@ -268,6 +269,10 @@ class UtMockWrapper(
     val type: RefType,
     private val mockInfo: UtMockInfo
 ) : WrapperInterface {
+    override val wrappedMethods: Map<String, KFunction4<Traverser, ObjectValue, SootMethod, List<SymbolicValue>, List<MethodResult>>> =
+        emptyMap()
+
+    override fun isWrappedMethod(method: SootMethod): Boolean = true
 
     override fun Traverser.invoke(
         wrapper: ObjectValue,
