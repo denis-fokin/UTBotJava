@@ -118,24 +118,22 @@ test("$filePathToInference")
         val methodJson = scope.getJSONObject(methodName)
         val typesString = methodJson.getString("!type")
             .filterNot { setOf(' ', '+', '!').contains(it) }
-        val parametersRegex = Regex("fn[(].+[)]")
-        val parametersList = parametersRegex.find(typesString)?.let { matchResult ->
-            val trimmed = matchResult.value
-                .removePrefix("fn(")
-                .removeSuffix(")")
-            val paramList = trimmed.split(',')
+        val parametersRegex = Regex("fn[(](.+)[)]")
+        val parametersList = parametersRegex.find(typesString)?.groups?.get(1)?.let { matchResult ->
+            val value = matchResult.value
+            val paramList = value.split(',')
             paramList.map { param ->
-                val paramReg = Regex(":.*")
-                makeClassId(paramReg.find(param)?.value
-                    ?.removePrefix(":")?.toLowerCase()
+                val paramReg = Regex(":(.*)")
+                makeClassId(paramReg.find(param)?.groups?.get(1)?.value
+                    ?.toLowerCase()
                     ?: throw IllegalStateException()
                 )
             }
         } ?: emptyList()
-        val returnTypeRegex = Regex("->.*")
-        val returnType = returnTypeRegex.find(typesString)?.let { matchResult ->
-            val trimmed = matchResult.value.removePrefix("->")
-            makeClassId(trimmed.toLowerCase())
+        val returnTypeRegex = Regex("->(.*)")
+        val returnType = returnTypeRegex.find(typesString)?.groups?.get(1)?.let { matchResult ->
+            val value = matchResult.value
+            makeClassId(value.toLowerCase())
         } ?: jsUndefinedClassId
 
         return MethodTypes(parametersList, returnType)
