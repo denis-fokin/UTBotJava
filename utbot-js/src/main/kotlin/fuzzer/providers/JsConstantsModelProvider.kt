@@ -28,7 +28,6 @@ object JsConstantsModelProvider : ModelProvider {
     }
 
     @Suppress("DuplicatedCode")
-//  JsPrimitiveModel is used instead of UtPrimitiveModel TODO: Fix this later
     internal fun modifyValue(value: Any, op: FuzzedOp): FuzzedValue? {
         if (!op.isComparisonOp()) return null
         val multiplier = if (op == FuzzedOp.LT || op == FuzzedOp.GE) -1 else 1

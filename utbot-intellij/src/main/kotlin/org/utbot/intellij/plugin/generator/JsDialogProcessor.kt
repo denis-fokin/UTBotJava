@@ -75,7 +75,7 @@ object JsDialogProcessor {
                 parentPsi = null
             }
             val funcNode = getFunctionNode(jsMemberInfo, parentPsi?.name)
-            // TODO: for some reason this won't extract attributes. Fix.
+            // TODO MINOR: for some reason this won't extract attributes. Fix.
             val attributeList = (jsMemberInfo.member as JSFunction).attributeList
             val methodTypes = ternService.processMethod(parentPsi?.name, funcNode.name.toString())
             val execId = JsMethodId(
@@ -93,13 +93,13 @@ object JsDialogProcessor {
             }
             val fuzzedValues =
                 jsFuzzing(methodUnderTestDescription = methodUnderTestDescription).toList()
-            // For dev purposes only random set of fuzzed values is picked. TODO: patch this later
+            // For dev purposes only random set of fuzzed values is picked.  SEVERE: patch this later
             val randomParams = getRandomNumFuzzedValues(fuzzedValues)
             val testsForGenerator = mutableListOf<Sequence<*>>()
             randomParams.forEach { param ->
                 val returnValue = runJs(param, funcNode, jsMemberInfo.member.text)
-                // For dev purposes only 10 random sets of fuzzed values is picked. TODO: patch this later
-                // Hack: Should create one file with all fun to compile?
+                // For dev purposes only 10 random sets of fuzzed values is picked. TODO SEVERE: patch this later
+                // Hack: Should create one file with all fun to compile? TODO MINOR: think
                 testsForGenerator.add(
                     ModelBasedNameSuggester().suggest(
                         methodUnderTestDescription,

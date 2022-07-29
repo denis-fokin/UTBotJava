@@ -47,7 +47,7 @@ object JsPrimitivesModelProvider : ModelProvider {
                 JsPrimitiveModel(-1.1).fuzzed { summary = "%var% < 0.0" },
                 JsPrimitiveModel(MIN_INT.toDouble()).fuzzed { summary = "%var% = Number.MIN_SAFE_VALUE" },
                 JsPrimitiveModel(MAX_INT.toDouble()).fuzzed { summary = "%var% = Number.MAX_SAFE_VALUE" },
-//                TODO: Think about such values as they are present in JavaScript.
+//                TODO SEVERE: Think about such values as they are present in JavaScript.
 //                UtPrimitiveModel(Double.NEGATIVE_INFINITY).fuzzed { summary = "%var% = Double.NEGATIVE_INFINITY" },
 //                UtPrimitiveModel(Double.POSITIVE_INFINITY).fuzzed { summary = "%var% = Double.POSITIVE_INFINITY" },
 //                JsPrimitiveModel(Double.NaN).fuzzed { summary = "%var% = Double.NaN" },

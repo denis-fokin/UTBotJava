@@ -11,8 +11,8 @@ import org.utbot.framework.plugin.api.util.jsUndefinedClassId
 
 /*
     NOTE: this approach is quite bad, but we failed to implement alternatives.
-    TODO: 1. Find a better solution after the first stable version.
-          2. Load all necessary .js files in Tern.js since functions can be exported and used in other files.
+    TODO: 1. MINOR: Find a better solution after the first stable version.
+          2. SEVERE: Load all necessary .js files in Tern.js since functions can be exported and used in other files.
  */
 
 /**
@@ -141,7 +141,7 @@ test("$filePathToInference")
         return MethodTypes(parametersList, returnType)
     }
 
-    //TODO: move to appropriate place (JsIdUtil or JsClassId constructor)
+    //TODO SEVERE: move to appropriate place (JsIdUtil or JsClassId constructor)
     private fun makeClassId(name: String): JsClassId {
         val classId = when {
             name == "?" -> jsUndefinedClassId
@@ -150,7 +150,7 @@ test("$filePathToInference")
         }
        return when {
             classId.isJsBasic || classId is JsMultipleClassId -> classId
-            //TODO
+            //TODO SEVERE
             else -> throw UnsupportedOperationException("Not yet implemented.")
         }
     }
