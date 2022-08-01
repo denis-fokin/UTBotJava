@@ -2860,3 +2860,13 @@ inline fun <reified T> withUsingReflectionForMaximizingCoverage(maximizeCoverage
         UtSettings.maximizeCoverageUsingReflection = prev
     }
 }
+
+inline fun <reified T> withPathSelectorStepsLimit(stepsLimit: Int, block: () -> T): T {
+    val prev = UtSettings.pathSelectorStepsLimit
+    UtSettings.pathSelectorStepsLimit = stepsLimit
+    try {
+        return block()
+    } finally {
+        UtSettings.pathSelectorStepsLimit = prev
+    }
+}
