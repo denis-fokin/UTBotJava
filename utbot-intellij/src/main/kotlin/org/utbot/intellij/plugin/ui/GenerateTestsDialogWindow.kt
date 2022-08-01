@@ -10,6 +10,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.roots.ContentEntry
@@ -510,6 +511,8 @@ class GenerateTestsDialogWindow(val model: GenerateTestsModel) : DialogWrapper(m
     private fun createTestRootAndPackages(): Boolean {
         model.testSourceRoot = createDirectoryIfMissing(model.testSourceRoot)
         val testSourceRoot = model.testSourceRoot ?: return false
+        model.testModule = ModuleUtil.findModuleForFile(testSourceRoot, model.project) ?: error("Could not find module")
+
         if (model.testSourceRoot?.isDirectory != true) return false
         if (getOrCreateTestRoot(testSourceRoot)) {
             if (cbSpecifyTestPackage.isSelected) {

@@ -3,6 +3,7 @@ package org.utbot.intellij.plugin.ui.components
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.impl.FakeVirtualFile
@@ -50,8 +51,11 @@ class TestFolderComboWithBrowseButton(private val model: GenerateTestsModel) : C
             }
         }
 
-        val testRoots = model.testModule.suitableTestSourceRoots().toMutableList()
-        model.testModule.addDedicatedTestRoot(testRoots)
+        // this part is blocked for Gradle, where multiple test modules can exist
+        val defaultModuleTestRoots = model.testModule.suitableTestSourceRoots().toMutableList()
+        model.testModule.addDedicatedTestRoot(defaultModuleTestRoots)
+
+        val testRoots = model.potentialTestModules.flatMap { it.suitableTestSourceRoots().toMutableList() }
         if (testRoots.isNotEmpty()) {
             configureRootsCombo(testRoots)
         } else {

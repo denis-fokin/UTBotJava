@@ -11,6 +11,7 @@ import org.utbot.framework.plugin.api.CodegenLanguage
 import org.utbot.framework.plugin.api.MockFramework
 import org.utbot.framework.plugin.api.MockStrategyApi
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.vfs.VirtualFile
@@ -18,19 +19,32 @@ import com.intellij.psi.PsiClass
 import com.intellij.refactoring.util.classMembers.MemberInfo
 import org.jetbrains.kotlin.idea.core.getPackage
 import org.utbot.framework.util.ConflictTriggers
+import org.utbot.intellij.plugin.ui.utils.jdkVersion
 
 data class GenerateTestsModel(
     val project: Project,
     val srcModule: Module,
-    val testModule: Module,
-    val jdkVersion: JavaSdkVersion,
+    val potentialTestModules: List<Module>,
     var srcClasses: Set<PsiClass>,
     var selectedMethods: Set<MemberInfo>?,
     var timeout:Long,
     var generateWarningsForStaticMocking: Boolean = false,
     var fuzzingValue: Double = 0.05
 ) {
+    var testModule: Module = potentialTestModules.first()
+    val jdkVersion: JavaSdkVersion?
+        get() = try {
+            testModule.jdkVersion()
+        } catch (e: IllegalStateException) {
+            null
+        }
+
     var testSourceRoot: VirtualFile? = null
+        set(value) {
+            requireNotNull(value)
+            testModule = ModuleUtil.findModuleForFile(value, project) ?: error("Could not find module for $value")
+            field = value
+        }
     var testPackageName: String? = null
     lateinit var testFramework: TestFramework
     lateinit var mockStrategy: MockStrategyApi
