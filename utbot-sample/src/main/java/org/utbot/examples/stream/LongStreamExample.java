@@ -349,15 +349,15 @@ public class LongStreamExample {
         Short first = list.get(0);
         Short second = list.get(1);
 
-        if (first == 0 && second == 0) {
+        if ((first == null || first == 0) && (second == null || second == 0)) {
             return longs.anyMatch(predicate);
         }
 
-        if (first == 0) {
+        if (first == null || first == 0) {
             return longs.anyMatch(predicate);
         }
 
-        if (second == 0) {
+        if (second == null || second == 0) {
             return longs.anyMatch(predicate);
         }
 
@@ -379,15 +379,15 @@ public class LongStreamExample {
         Short first = list.get(0);
         Short second = list.get(1);
 
-        if (first == 0 && second == 0) {
+        if ((first == null || first == 0) && (second == null || second == 0)) {
             return longs.allMatch(predicate);
         }
 
-        if (first == 0) {
+        if (first == null || first == 0) {
             return longs.allMatch(predicate);
         }
 
-        if (second == 0) {
+        if (second == null || second == 0) {
             return longs.allMatch(predicate);
         }
 
@@ -409,15 +409,15 @@ public class LongStreamExample {
         Short first = list.get(0);
         Short second = list.get(1);
 
-        if (first == 0 && second == 0) {
+        if ((first == null || first == 0) && (second == null || second == 0)) {
             return longs.noneMatch(predicate);
         }
 
-        if (first == 0) {
+        if (first == null || first == 0) {
             return longs.noneMatch(predicate);
         }
 
-        if (second == 0) {
+        if (second == null || second == 0) {
             return longs.noneMatch(predicate);
         }
 

@@ -350,15 +350,15 @@ public class IntStreamExample {
         Short first = list.get(0);
         Short second = list.get(1);
 
-        if (first == 0 && second == 0) {
+        if ((first == null || first == 0) && (second == null || second == 0)) {
             return ints.anyMatch(predicate);
         }
 
-        if (first == 0) {
+        if (first == null || first == 0) {
             return ints.anyMatch(predicate);
         }
 
-        if (second == 0) {
+        if (second == null || second == 0) {
             return ints.anyMatch(predicate);
         }
 
@@ -380,15 +380,15 @@ public class IntStreamExample {
         Short first = list.get(0);
         Short second = list.get(1);
 
-        if (first == 0 && second == 0) {
+        if ((first == null || first == 0) && (second == null || second == 0)) {
             return ints.allMatch(predicate);
         }
 
-        if (first == 0) {
+        if (first == null || first == 0) {
             return ints.allMatch(predicate);
         }
 
-        if (second == 0) {
+        if (second == null || second == 0) {
             return ints.allMatch(predicate);
         }
 
@@ -410,15 +410,15 @@ public class IntStreamExample {
         Short first = list.get(0);
         Short second = list.get(1);
 
-        if (first == 0 && second == 0) {
+        if ((first == null || first == 0) && (second == null || second == 0)) {
             return ints.noneMatch(predicate);
         }
 
-        if (first == 0) {
+        if (first == null || first == 0) {
             return ints.noneMatch(predicate);
         }
 
-        if (second == 0) {
+        if (second == null || second == 0) {
             return ints.noneMatch(predicate);
         }
 
