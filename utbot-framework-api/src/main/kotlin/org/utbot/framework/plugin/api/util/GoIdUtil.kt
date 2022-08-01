@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.utbot.framework.plugin.api.util
 
 import org.utbot.framework.plugin.api.GoClassId
@@ -62,3 +64,15 @@ val goPrimitives = setOf(
 
 val GoClassId.isPrimitive: Boolean
     get() = this in goPrimitives
+
+val goTypesNeverRequireExplicitCast = setOf(
+    goBoolTypeId,
+    goComplex128TypeId,
+    goComplex64TypeId,
+    goFloat64TypeId,
+    goIntTypeId,
+    goStringTypeId,
+)
+
+val GoTypeId.neverRequiresExplicitCast: Boolean
+    get() = this in goTypesNeverRequireExplicitCast

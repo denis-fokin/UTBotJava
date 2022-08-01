@@ -575,43 +575,113 @@ class GoTypeId(
     goName: String,
     val correspondingKClass: KClass<out Any>? = null,
     val isErrorType: Boolean = goName == "error"
-): GoClassId(goName)
+) : GoClassId(goName)
 
 // Wraps tuple of several classes into one GoClassId. It helps to handle return types of Go functions and methods.
-class GoSyntheticMultipleTypesId(val types: List<GoTypeId>): GoClassId("synthetic_multiple_types") {
+class GoSyntheticMultipleTypesId(val types: List<GoTypeId>) : GoClassId("synthetic_multiple_types") {
     override fun toString(): String = types.joinToString(separator = ", ", prefix = "(", postfix = ")")
 }
 
 // There is no void type in Go; therefore, this class solves function or method returns nothing case.
-class GoSyntheticNoTypeId: GoClassId("")
+class GoSyntheticNoTypeId : GoClassId("")
 
 open class GoUtModel(
-    override val classId: GoClassId
-): UtModel(classId)
+    override val classId: GoClassId,
+    open val requiredImports: Set<String>
+) : UtModel(classId)
 
-data class GoUtPrimitiveModel(
-    val value: Any,
-    override val classId: GoTypeId
-) : GoUtModel(classId) {
-
-    // TODO: get rid of this constructor to make models more precise
-    constructor(value: Any) : this(value, primitiveModelValueToGoClassId(value))
-
-    override fun toString() =
-        if (classId == goStringTypeId) {
-            "\"$value\""
-        } else {
-            value.toString()
-        }
+// NEVER and DEPENDS difference is useful in code generation of assert.Equals(...)
+enum class ExplicitCastMode {
+    REQUIRED, NEVER, DEPENDS
 }
 
+open class GoUtPrimitiveModel(
+    val value: Any,
+    override val classId: GoTypeId,
+    override val requiredImports: Set<String> = emptySet(),
+    open val explicitCastMode: ExplicitCastMode =
+        if (classId.neverRequiresExplicitCast) {
+            ExplicitCastMode.NEVER
+        } else {
+            ExplicitCastMode.DEPENDS
+        }
+) : GoUtModel(classId, requiredImports) {
+
+    override fun toString() = when (explicitCastMode) {
+        ExplicitCastMode.REQUIRED -> toCastedValueGoCode()
+        ExplicitCastMode.DEPENDS, ExplicitCastMode.NEVER -> toValueGoCode()
+    }
+
+    open fun toValueGoCode(): String = "$value"
+    fun toCastedValueGoCode(): String = "$classId(${toValueGoCode()})"
+}
+
+class GoUtFloatNaNModel(
+    typeId: GoTypeId,
+    override val explicitCastMode: ExplicitCastMode =
+        if (typeId != goFloat64TypeId) {
+            ExplicitCastMode.REQUIRED
+        } else {
+            ExplicitCastMode.NEVER
+        }
+) : GoUtPrimitiveModel(
+    NAN_VALUE_GO_CODE,
+    typeId,
+    requiredImports = setOf("math"),
+    explicitCastMode = explicitCastMode
+) {
+    override fun toValueGoCode(): String = NAN_VALUE_GO_CODE
+}
+
+private const val NAN_VALUE_GO_CODE = "math.NaN()"
+
+class GoUtFloatInfModel(
+    val sign: Int,
+    typeId: GoTypeId,
+    override val explicitCastMode: ExplicitCastMode =
+        if (typeId != goFloat64TypeId) {
+            ExplicitCastMode.REQUIRED
+        } else {
+            ExplicitCastMode.NEVER
+        }
+) : GoUtPrimitiveModel(
+    toInfValueGoCode(sign),
+    typeId,
+    requiredImports = setOf("math"),
+    explicitCastMode = explicitCastMode
+) {
+    override fun toValueGoCode(): String = NAN_VALUE_GO_CODE
+}
+
+private fun toInfValueGoCode(sign: Int): String = "math.Inf($sign)"
+
+class GoUtComplexModel(
+    val realValue: GoUtPrimitiveModel,
+    val imagValue: GoUtPrimitiveModel,
+    override val classId: GoTypeId,
+    override val requiredImports: Set<String> = realValue.requiredImports + imagValue.requiredImports,
+    override val explicitCastMode: ExplicitCastMode = ExplicitCastMode.NEVER
+) : GoUtPrimitiveModel(toComplexValueGoCode(realValue, imagValue), classId, requiredImports, explicitCastMode) {
+
+    override fun toValueGoCode(): String = toComplexValueGoCode(realValue, imagValue)
+}
+
+private fun toComplexValueGoCode(realValue: GoUtPrimitiveModel, imagValue: GoUtPrimitiveModel): String =
+    "complex($realValue, $imagValue)"
+
 // TODO: maybe add unsigned kotlin types
+@Suppress("unused")
+@OptIn(ExperimentalUnsignedTypes::class)
 private fun primitiveModelValueToGoClassId(value: Any) = when (value) {
     is Byte -> goInt8TypeId
+    is UByte -> goUint8TypeId
     is Short -> goInt16TypeId
+    is UShort -> goUint16TypeId
     is Char -> goUint16TypeId
     is Int -> goInt32TypeId
+    is UInt -> goUint32TypeId
     is Long -> goInt64TypeId
+    is ULong -> goUint64TypeId
     is Float -> goFloat32TypeId
     is Double -> goFloat64TypeId
     is Boolean -> goBoolTypeId
@@ -621,7 +691,7 @@ private fun primitiveModelValueToGoClassId(value: Any) = when (value) {
 
 class GoUtNilModel(
     classId: GoClassId
-) : GoUtModel(classId) {
+) : GoUtModel(classId, emptySet()) {
     override fun toString() = "nil"
 }
 

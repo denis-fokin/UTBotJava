@@ -1,87 +1,54 @@
 package org.utbot.go.providers
 
-import org.utbot.framework.plugin.api.GoUtPrimitiveModel
+import org.utbot.framework.plugin.api.*
 import org.utbot.framework.plugin.api.util.*
 import org.utbot.fuzzer.FuzzedMethodDescription
 import org.utbot.fuzzer.FuzzedParameter
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.fuzzer.ModelProvider
 import org.utbot.fuzzer.ModelProvider.Companion.yieldValue
+import org.utbot.go.getExplicitCastModeForFloatModel
 
 // This class is highly based on PrimitiveDefaultsModelProvider.
-@Suppress("DuplicatedCode")
 object GoPrimitivesModelProvider : ModelProvider {
 
     override fun generate(description: FuzzedMethodDescription): Sequence<FuzzedParameter> = sequence {
         description.parametersMap.forEach { (classId, parameterIndices) ->
-            val primitives: List<FuzzedValue> = when (classId) {
-                goByteTypeId, goUint8TypeId -> listOf(
-                    GoUtPrimitiveModel(Char.MIN_VALUE).fuzzed { summary = "%var% = Char.MIN_VALUE" },
-                    GoUtPrimitiveModel(Char.MAX_VALUE).fuzzed { summary = "%var% = Char.MAX_VALUE" },
-                )
+            val typeId = classId as? GoTypeId ?: return@forEach
+
+            val primitives: List<FuzzedValue> = when (typeId) {
+                goByteTypeId -> generateUnsignedIntegerModels(typeId, goUint8TypeId.name)
+
                 goBoolTypeId -> listOf(
-                    GoUtPrimitiveModel(false).fuzzed { summary = "%var% = false" },
-                    GoUtPrimitiveModel(true).fuzzed { summary = "%var% = true" }
+                    GoUtPrimitiveModel(false, typeId).fuzzed { summary = "%var% = false" },
+                    GoUtPrimitiveModel(true, typeId).fuzzed { summary = "%var% = true" }
                 )
-                goComplex128TypeId, goComplex64TypeId -> TODO()
-                byteClassId -> listOf(
-                    GoUtPrimitiveModel(0.toByte()).fuzzed { summary = "%var% = 0" },
-                    GoUtPrimitiveModel(1.toByte()).fuzzed { summary = "%var% > 0" },
-                    GoUtPrimitiveModel((-1).toByte()).fuzzed { summary = "%var% < 0" },
-                    GoUtPrimitiveModel(Byte.MIN_VALUE).fuzzed { summary = "%var% = Byte.MIN_VALUE" },
-                    GoUtPrimitiveModel(Byte.MAX_VALUE).fuzzed { summary = "%var% = Byte.MAX_VALUE" },
-                )
-                goFloat32TypeId -> listOf(
-                    GoUtPrimitiveModel(0.0f).fuzzed { summary = "%var% = 0f" },
-                    GoUtPrimitiveModel(1.1f).fuzzed { summary = "%var% > 0f" },
-                    GoUtPrimitiveModel(-1.1f).fuzzed { summary = "%var% < 0f" },
-                    GoUtPrimitiveModel(Float.MIN_VALUE).fuzzed { summary = "%var% = Float.MIN_VALUE" },
-                    GoUtPrimitiveModel(Float.MAX_VALUE).fuzzed { summary = "%var% = Float.MAX_VALUE" },
-                    GoUtPrimitiveModel(Float.NEGATIVE_INFINITY).fuzzed { summary = "%var% = Float.NEGATIVE_INFINITY" },
-                    GoUtPrimitiveModel(Float.POSITIVE_INFINITY).fuzzed { summary = "%var% = Float.POSITIVE_INFINITY" },
-                    GoUtPrimitiveModel(Float.NaN).fuzzed { summary = "%var% = Float.NaN" },
-                )
-                goFloat64TypeId -> listOf(
-                    GoUtPrimitiveModel(0.0).fuzzed { summary = "%var% = 0.0" },
-                    GoUtPrimitiveModel(1.1).fuzzed { summary = "%var% > 0.0" },
-                    GoUtPrimitiveModel(-1.1).fuzzed { summary = "%var% < 0.0" },
-                    GoUtPrimitiveModel(Double.MIN_VALUE).fuzzed { summary = "%var% = Double.MIN_VALUE" },
-                    GoUtPrimitiveModel(Double.MAX_VALUE).fuzzed { summary = "%var% = Double.MAX_VALUE" },
-                    GoUtPrimitiveModel(Double.NEGATIVE_INFINITY).fuzzed { summary = "%var% = Double.NEGATIVE_INFINITY" },
-                    GoUtPrimitiveModel(Double.POSITIVE_INFINITY).fuzzed { summary = "%var% = Double.POSITIVE_INFINITY" },
-                    GoUtPrimitiveModel(Double.NaN).fuzzed { summary = "%var% = Double.NaN" },
-                )
-                goInt16TypeId -> listOf(
-                    GoUtPrimitiveModel(0.toShort()).fuzzed { summary = "%var% = 0" },
-                    GoUtPrimitiveModel(1.toShort()).fuzzed { summary = "%var% > 0" },
-                    GoUtPrimitiveModel((-1).toShort()).fuzzed { summary = "%var% < 0" },
-                    GoUtPrimitiveModel(Short.MIN_VALUE).fuzzed { summary = "%var% = Short.MIN_VALUE" },
-                    GoUtPrimitiveModel(Short.MAX_VALUE).fuzzed { summary = "%var% = Short.MAX_VALUE" },
-                )
-                goIntTypeId, goInt32TypeId, goRuneTypeId -> listOf(
-                    GoUtPrimitiveModel(0).fuzzed { summary = "%var% = 0" },
-                    GoUtPrimitiveModel(1).fuzzed { summary = "%var% > 0" },
-                    GoUtPrimitiveModel((-1)).fuzzed { summary = "%var% < 0" },
-                    GoUtPrimitiveModel(Int.MIN_VALUE).fuzzed { summary = "%var% = Int.MIN_VALUE" },
-                    GoUtPrimitiveModel(Int.MAX_VALUE).fuzzed { summary = "%var% = Int.MAX_VALUE" },
-                )
-                goInt64TypeId -> listOf(
-                    GoUtPrimitiveModel(0L).fuzzed { summary = "%var% = 0L" },
-                    GoUtPrimitiveModel(1L).fuzzed { summary = "%var% > 0L" },
-                    GoUtPrimitiveModel(-1L).fuzzed { summary = "%var% < 0L" },
-                    GoUtPrimitiveModel(Long.MIN_VALUE).fuzzed { summary = "%var% = Long.MIN_VALUE" },
-                    GoUtPrimitiveModel(Long.MAX_VALUE).fuzzed { summary = "%var% = Long.MAX_VALUE" },
-                )
-                goInt8TypeId -> TODO()
+
+                goComplex128TypeId, goComplex64TypeId -> generateComplexModels(typeId)
+
+                goFloat32TypeId, goFloat64TypeId -> generateFloatModels(typeId)
+
+                goIntTypeId, goInt16TypeId, goInt32TypeId, goInt64TypeId, goInt8TypeId ->
+                    generateSignedIntegerModels(typeId)
+
+                goRuneTypeId -> generateSignedIntegerModels(typeId, goInt32TypeId.name)
+
                 goStringTypeId -> listOf(
-                    GoUtPrimitiveModel("").fuzzed { summary = "%var% = empty string" },
-                    GoUtPrimitiveModel("   ").fuzzed { summary = "%var% = blank string" },
-                    GoUtPrimitiveModel("string").fuzzed { summary = "%var% != empty string" },
-                    GoUtPrimitiveModel("\\n\\t\\r").fuzzed { summary = "%var% has special characters" },
-                    // TODO: get rid of double slash
+                    GoUtPrimitiveModel("\"\"", typeId).fuzzed { summary = "%var% = empty string" },
+                    GoUtPrimitiveModel("\"   \"", typeId).fuzzed { summary = "%var% = blank string" },
+                    GoUtPrimitiveModel("\"string\"", typeId).fuzzed { summary = "%var% != empty string" },
+                    GoUtPrimitiveModel("\"\\n\\t\\r\"", typeId).fuzzed { summary = "%var% has special characters" },
                 )
-                goUintTypeId, goUint16TypeId, goUint32TypeId, goUint64TypeId -> TODO()
-                else -> listOf()
+
+                goUintTypeId, goUint16TypeId, goUint32TypeId, goUint64TypeId, goUint8TypeId ->
+                    generateUnsignedIntegerModels(typeId)
+
+                goUintPtrTypeId -> listOf(
+                    GoUtPrimitiveModel(0, typeId).fuzzed { summary = "%var% = 0" },
+                    GoUtPrimitiveModel(1, typeId).fuzzed { summary = "%var% > 0" },
+                )
+
+                else -> emptyList()
             }
 
             primitives.forEach { model ->
@@ -89,6 +56,88 @@ object GoPrimitivesModelProvider : ModelProvider {
                     yieldValue(index, model)
                 }
             }
+        }
+    }
+
+    private fun generateSignedIntegerModels(typeId: GoTypeId, mathTypeName: String = typeId.name): List<FuzzedValue> {
+        val minValue = "math.Min${mathTypeName.capitalize()}"
+        val maxValue = "math.Max${mathTypeName.capitalize()}"
+        return listOf(
+            GoUtPrimitiveModel(0, typeId).fuzzed { summary = "%var% = 0" },
+            GoUtPrimitiveModel(1, typeId).fuzzed { summary = "%var% > 0" },
+            GoUtPrimitiveModel(-1, typeId).fuzzed { summary = "%var% < 0" },
+            GoUtPrimitiveModel(minValue, typeId, setOf("math")).fuzzed { summary = "%var% = $minValue" },
+            GoUtPrimitiveModel(maxValue, typeId, setOf("math")).fuzzed { summary = "%var% = $maxValue" },
+        )
+    }
+
+    private fun generateUnsignedIntegerModels(typeId: GoTypeId, mathTypeName: String = typeId.name): List<FuzzedValue> {
+        val maxValue = "math.Max${mathTypeName.capitalize()}"
+        return listOf(
+            GoUtPrimitiveModel(0, typeId).fuzzed { summary = "%var% = 0" },
+            GoUtPrimitiveModel(1, typeId).fuzzed { summary = "%var% > 0" },
+            GoUtPrimitiveModel(maxValue, typeId, setOf("math")).fuzzed { summary = "%var% = $maxValue" },
+        )
+    }
+
+    private fun generateFloatModels(
+        typeId: GoTypeId,
+        explicitCastRequired: Boolean = false
+    ): List<FuzzedValue> {
+        val maxValue = "math.Max${typeId.name.capitalize()}"
+        val smallestNonZeroValue = "math.SmallestNonzero${typeId.name.capitalize()}"
+
+        val explicitCastRequiredModeIfFloat32 =
+            getExplicitCastModeForFloatModel(typeId, explicitCastRequired, ExplicitCastMode.REQUIRED)
+        val explicitCastMode = getExplicitCastModeForFloatModel(typeId, explicitCastRequired, ExplicitCastMode.DEPENDS)
+
+        return listOf(
+            GoUtPrimitiveModel(0.0, typeId, explicitCastMode = explicitCastMode).fuzzed {
+                summary = "%var% = 0.0"
+            },
+            GoUtPrimitiveModel(1.1, typeId, explicitCastMode = explicitCastMode).fuzzed {
+                summary = "%var% > 0.0"
+            },
+            GoUtPrimitiveModel(-1.1, typeId, explicitCastMode = explicitCastMode).fuzzed {
+                summary = "%var% < 0.0"
+            },
+            GoUtPrimitiveModel(
+                smallestNonZeroValue,
+                typeId,
+                requiredImports = setOf("math"),
+                explicitCastMode = explicitCastRequiredModeIfFloat32
+            ).fuzzed {
+                summary = "%var% = $smallestNonZeroValue"
+            },
+            GoUtPrimitiveModel(
+                maxValue,
+                typeId,
+                requiredImports = setOf("math"),
+                explicitCastMode = explicitCastRequiredModeIfFloat32
+            ).fuzzed {
+                summary = "%var% = $maxValue"
+            },
+            GoUtFloatInfModel(-1, typeId).fuzzed { summary = "%var% = math.Inf(-1)" },
+            GoUtFloatInfModel(1, typeId).fuzzed { summary = "%var% = math.Inf(1)" },
+            GoUtFloatNaNModel(typeId).fuzzed { summary = "%var% = math.NaN()" },
+        )
+    }
+
+    private fun <T> cartesianProduct(listA: List<T>, listB: List<T>): List<List<T>> {
+        val result = mutableListOf<List<T>>()
+        listA.forEach { a -> listB.forEach { b -> result.add(listOf(a, b)) } }
+        return result
+    }
+
+    private fun generateComplexModels(typeId: GoTypeId): List<FuzzedValue> {
+        val correspondingFloatType = if (typeId == goComplex128TypeId) goFloat64TypeId else goFloat32TypeId
+        val componentModels = generateFloatModels(correspondingFloatType, typeId == goComplex64TypeId)
+        return cartesianProduct(componentModels, componentModels).map { (realFuzzedValue, imagFuzzedValue) ->
+            GoUtComplexModel(
+                realFuzzedValue.model as GoUtPrimitiveModel,
+                imagFuzzedValue.model as GoUtPrimitiveModel,
+                typeId
+            ).fuzzed { summary = "%var% = complex(${realFuzzedValue.summary}, ${imagFuzzedValue.summary})" }
         }
     }
 }

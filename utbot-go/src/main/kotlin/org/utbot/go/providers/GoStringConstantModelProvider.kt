@@ -22,7 +22,7 @@ object GoStringConstantModelProvider : ModelProvider {
                 listOf(value, mutate(random, value as? String, op))
                     .asSequence()
                     .filterNotNull()
-                    .map { GoUtPrimitiveModel(it) }.forEach { model ->
+                    .map { GoUtPrimitiveModel(it, goStringTypeId) }.forEach { model ->
                         description.parametersMap.getOrElse(model.classId) { emptyList() }.forEach { index ->
                             yieldValue(index, model.fuzzed { summary = "%var% = string" })
                         }
@@ -31,9 +31,13 @@ object GoStringConstantModelProvider : ModelProvider {
     }
 
     private fun mutate(random: Random, value: String?, op: FuzzedOp): String? {
-        if (value == null || value.isEmpty() || op != FuzzedOp.CH) return null
+        if (value.isNullOrEmpty() || op != FuzzedOp.CH) return null
         val indexOfMutation = random.nextInt(value.length)
-        return value.replaceRange(indexOfMutation, indexOfMutation + 1, SingleCharacterSequence(value[indexOfMutation] - random.nextInt(1, 128)))
+        return value.replaceRange(
+            indexOfMutation,
+            indexOfMutation + 1,
+            SingleCharacterSequence(value[indexOfMutation] - random.nextInt(1, 128))
+        )
     }
 
     private class SingleCharacterSequence(private val character: Char) : CharSequence {

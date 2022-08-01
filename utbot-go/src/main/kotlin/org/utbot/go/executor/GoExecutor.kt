@@ -2,15 +2,12 @@ package org.utbot.go.executor
 
 import mu.KotlinLogging
 import org.utbot.common.pid
-import org.utbot.framework.plugin.api.GoTypeId
-import org.utbot.framework.plugin.api.GoUtNilModel
-import org.utbot.framework.plugin.api.GoUtPrimitiveModel
-import org.utbot.framework.plugin.api.util.goAnyTypeId
-import org.utbot.framework.plugin.api.util.goStringTypeId
-import org.utbot.framework.plugin.api.util.isPrimitive
+import org.utbot.framework.plugin.api.*
+import org.utbot.framework.plugin.api.util.*
 import org.utbot.fuzzer.FuzzedValue
 import org.utbot.go.GoFunctionOrMethodNode
 import org.utbot.go.codegen.GoSimpleCodeGenerator
+import org.utbot.go.fuzzer.goRequiredImports
 import java.io.File
 import java.io.InputStreamReader
 import java.nio.file.Paths
@@ -28,6 +25,10 @@ object GoExecutor {
         // Note: codes must be correctly convertable into Regex (by .toRegex() method)
         const val NIL_VALUE_CODE = "%__go_exec_nil__%"
         const val DELIMITER_CODE = "%__go_exec_delim__%"
+        const val NAN_VALUE_CODE = "%__go_exec_nan__%"
+        const val POS_INF_VALUE_CODE = "%__go_exec_pos_inf__%"
+        const val NEG_INF_VALUE_CODE = "%__go_exec_neg_inf__%"
+        const val COMPLEX_PARTS_DELIMITER_CODE = "%__go_exec_complex_parts_delim__%"
 
         const val EXECUTION_RESULT_OUTPUT_FILE_NAME = "ut_go_executor_out_communication.temp"
         const val EXECUTION_RESULT_ERROR_FILE_NAME = "ut_go_executor_err_communication.temp"
@@ -116,7 +117,12 @@ object GoExecutor {
         val fileBuilder = GoSimpleCodeGenerator.GoFileCodeBuilder()
 
         fileBuilder.setPackage(functionOrMethodNode.containingFileNode.containingPackageName)
-        fileBuilder.setImports(listOf("bufio", "fmt", "io", "os", "testing", "reflect"))
+
+        val imports = mutableSetOf("bufio", "fmt", "io", "math", "os", "testing", "reflect")
+        fuzzedParametersValues.forEach {
+            imports += it.goRequiredImports
+        }
+        fileBuilder.setImports(imports)
 
         val checkErrorFunctionDeclaration = """
             func __checkErrorAndExitToUtGoExecutor__(err error) {
@@ -126,26 +132,79 @@ object GoExecutor {
             }
         """.trimIndent()
 
+        val float64ToStringFunctionDeclaration = """
+            func __float64ValueToStringForUtGoExecutor__(value float64) string {
+            	const outputNaN = "${Constants.NAN_VALUE_CODE}"
+            	const outputPosInf = "${Constants.POS_INF_VALUE_CODE}"
+            	const outputNegInf = "${Constants.NEG_INF_VALUE_CODE}"
+            	switch {
+            	case math.IsNaN(value):
+            		return fmt.Sprint(outputNaN)
+            	case math.IsInf(value, 1):
+            		return fmt.Sprint(outputPosInf)
+            	case math.IsInf(value, -1):
+            		return fmt.Sprint(outputNegInf)
+            	default:
+            		return fmt.Sprintf("%#v", value)
+            	}
+            }
+        """.trimIndent()
+
+        val float32ToStringFunctionDeclaration = """
+            func __float32ValueToStringForUtGoExecutor__(value float32) string {
+            	return __float64ValueToStringForUtGoExecutor__(float64(value))
+            }
+        """.trimIndent()
+
+        val valueToStringFunctionDeclaration = """
+            func __valueToStringForUtGoExecutor__(value any) string {
+            	const outputComplexPartsDelimiter = "%__go_exec_complex_parts_delim__%"
+            	switch typedValue := value.(type) {
+            	case complex128:
+            		realPartString := __float64ValueToStringForUtGoExecutor__(real(typedValue))
+            		imagPartString := __float64ValueToStringForUtGoExecutor__(imag(typedValue))
+            		return fmt.Sprintf("%v%v%v", realPartString, outputComplexPartsDelimiter, imagPartString)
+            	case complex64:
+            		realPartString := __float32ValueToStringForUtGoExecutor__(real(typedValue))
+            		imagPartString := __float32ValueToStringForUtGoExecutor__(imag(typedValue))
+            		return fmt.Sprintf("%v%v%v", realPartString, outputComplexPartsDelimiter, imagPartString)
+            	case float64:
+            		return __float64ValueToStringForUtGoExecutor__(typedValue)
+            	case float32:
+            		return __float32ValueToStringForUtGoExecutor__(typedValue)
+            	case string:
+            		return fmt.Sprintf("%#v", typedValue)
+            	default:
+            		return fmt.Sprintf("%v", typedValue)
+            	}
+            }
+        """.trimIndent()
+
         val printOrExitFunctionDeclaration = """
             func __printToUtGoExecutorOrExit__(writer io.Writer, value any) {
-                _, err := fmt.Fprint(writer, value)
-                __checkErrorAndExitToUtGoExecutor__(err)
+            	_, err := fmt.Fprint(writer, __valueToStringForUtGoExecutor__(value))
+            	__checkErrorAndExitToUtGoExecutor__(err)
+            }
+        """.trimIndent()
+
+        val printDelimiterOrExitFunctionDeclaration = """
+            func __printDelimiterToUtGoExecutorOrExit__(writer io.Writer) {
+            	const outputDelimiter = "${Constants.DELIMITER_CODE}"
+            	_, err := fmt.Fprint(writer, outputDelimiter)
+            	__checkErrorAndExitToUtGoExecutor__(err)
             }
         """.trimIndent()
 
         val printValueFunctionDeclaration = """
             func __printValueToUtGoExecutor__(writer io.Writer, value any, printPostfixSeparator bool) {
                 const outputNil = "${Constants.NIL_VALUE_CODE}"
-                const outputDelimiter = "${Constants.DELIMITER_CODE}"
-            
                 if value == nil {
                     __printToUtGoExecutorOrExit__(writer, outputNil)
-            
                 } else {
                     __printToUtGoExecutorOrExit__(writer, value)
                 }
                 if printPostfixSeparator {
-                    __printToUtGoExecutorOrExit__(writer, outputDelimiter)
+                    __printDelimiterToUtGoExecutorOrExit__(writer)
                 }
             }
         """.trimIndent()
@@ -215,7 +274,11 @@ object GoExecutor {
 
         fileBuilder.addTopLevelElements(
             checkErrorFunctionDeclaration,
+            float64ToStringFunctionDeclaration,
+            float32ToStringFunctionDeclaration,
+            valueToStringFunctionDeclaration,
             printOrExitFunctionDeclaration,
+            printDelimiterOrExitFunctionDeclaration,
             printValueFunctionDeclaration,
             createWriterFunctionDeclaration,
             closeWriterFunctionDeclaration,
@@ -256,8 +319,6 @@ object GoExecutor {
         }
 
         if (returnRawValues.size != returnCommonTypes.size) {
-            println(returnRawValuesOutput)
-            println(returnRawValues)
             error("Function or method completed execution must have as many return values as return types.")
         }
         var executedWithNonNullErrorString = false
@@ -270,7 +331,7 @@ object GoExecutor {
             } else {
                 // TODO: support errors fairly, i. e. as structs; for now consider them as strings
                 val nonNilModelTypeId = if (returnType.isErrorType) goStringTypeId else returnType
-                // TODO: support complex types
+                // TODO: support compound types
                 createGoUtPrimitiveModelFromRawValue(returnRawValue, nonNilModelTypeId)
             }
         }
@@ -286,18 +347,53 @@ object GoExecutor {
         return classId.isErrorType && rawValue != Constants.NIL_VALUE_CODE
     }
 
+    @OptIn(ExperimentalUnsignedTypes::class)
     private fun createGoUtPrimitiveModelFromRawValue(rawValue: String, typeId: GoTypeId): GoUtPrimitiveModel {
+        if (typeId == goFloat64TypeId || typeId == goFloat32TypeId) {
+            return convertRawFloatValueToGoUtPrimitiveModel(rawValue, typeId)
+        }
+        if (typeId == goComplex128TypeId || typeId == goComplex64TypeId) {
+            val correspondingFloatType = if (typeId == goComplex128TypeId) goFloat64TypeId else goFloat32TypeId
+            val (realPartModel, imagPartModel) = rawValue.split(Constants.COMPLEX_PARTS_DELIMITER_CODE.toRegex()).map {
+                convertRawFloatValueToGoUtPrimitiveModel(it, correspondingFloatType, typeId == goComplex64TypeId)
+            }
+            return GoUtComplexModel(realPartModel, imagPartModel, typeId)
+        }
         val value = when (typeId.correspondingKClass) {
+            Boolean::class -> rawValue.toBoolean()
             Byte::class -> rawValue.toByte()
-            Short::class -> rawValue.toShort()
+            UByte::class -> rawValue.toUByte()
             Char::class -> rawValue.toCharArray().firstOrNull() ?: rawValue
-            Int::class -> rawValue.toInt()
-            Long::class -> rawValue.toLong()
             Float::class -> rawValue.toFloat()
             Double::class -> rawValue.toDouble()
-            Boolean::class -> rawValue.toBoolean()
+            Short::class -> rawValue.toShort()
+            UShort::class -> rawValue.toUShort()
+            Int::class -> rawValue.toInt()
+            UInt::class -> rawValue.toUInt()
+            Long::class -> rawValue.toLong()
+            ULong::class -> rawValue.toULong()
             else -> rawValue
         }
         return GoUtPrimitiveModel(value, typeId)
+    }
+
+    private fun convertRawFloatValueToGoUtPrimitiveModel(
+        rawValue: String,
+        typeId: GoTypeId,
+        explicitCastRequired: Boolean = false
+    ): GoUtPrimitiveModel {
+        return when (rawValue) {
+            Constants.NAN_VALUE_CODE -> GoUtFloatNaNModel(typeId)
+            Constants.POS_INF_VALUE_CODE -> GoUtFloatInfModel(1, typeId)
+            Constants.NEG_INF_VALUE_CODE -> GoUtFloatInfModel(-1, typeId)
+            else -> {
+                val typedValue = if (typeId == goFloat64TypeId) rawValue.toDouble() else rawValue.toFloat()
+                if (explicitCastRequired) {
+                    GoUtPrimitiveModel(typedValue, typeId, explicitCastMode = ExplicitCastMode.REQUIRED)
+                } else {
+                    GoUtPrimitiveModel(typedValue, typeId)
+                }
+            }
+        }
     }
 }

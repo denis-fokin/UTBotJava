@@ -1,6 +1,7 @@
 package org.utbot.go.providers
 
 import org.utbot.framework.plugin.api.GoClassId
+import org.utbot.framework.plugin.api.GoTypeId
 import org.utbot.framework.plugin.api.GoUtPrimitiveModel
 import org.utbot.framework.plugin.api.UtPrimitiveModel
 import org.utbot.framework.plugin.api.util.isPrimitive
@@ -15,9 +16,9 @@ object GoConstantsModelProvider : ModelProvider {
         description.concreteValues
             .asSequence()
             .filter { (classId, _, _) -> (classId as GoClassId).isPrimitive }
-            .forEach { (_, value, op) ->
+            .forEach { (classId, value, op) ->
                 sequenceOf(
-                    GoUtPrimitiveModel(value).fuzzed { summary = "%var% = $value" },
+                    GoUtPrimitiveModel(value, classId as GoTypeId).fuzzed { summary = "%var% = $value" },
                     modifyValue(value, op)
                 )
                     .filterNotNull()
@@ -29,9 +30,11 @@ object GoConstantsModelProvider : ModelProvider {
             }
     }
 
+    // TODO: rewrite with use of GoUtPrimitiveModel
     private fun modifyValue(value: Any, op: FuzzedOp): FuzzedValue? {
         if (!op.isComparisonOp()) return null
         val multiplier = if (op == FuzzedOp.LT || op == FuzzedOp.GE) -1 else 1
+        // TODO: add unsigned and other primitive types?
         return when (value) {
             is Boolean -> value.not()
             is Byte -> value + multiplier.toByte()
