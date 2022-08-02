@@ -125,7 +125,7 @@ class BaseStreamExampleTest : UtValueTestCaseChecker(
         check(
             BaseStreamExample::flatMapToIntExample,
             ignoreExecutionsNumber,
-            { c, r -> r.contentEquals(c.flatMap { listOf(it.toInt(), it.toInt()) }.toIntArray()) },
+            { c, r -> r.contentEquals(c.flatMap { listOf(it?.toInt() ?: 0, it?.toInt() ?: 0) }.toIntArray()) },
             coverage = FullWithAssumptions(assumeCallsNumber = 1)
         )
     }
@@ -135,7 +135,7 @@ class BaseStreamExampleTest : UtValueTestCaseChecker(
         check(
             BaseStreamExample::flatMapToLongExample,
             ignoreExecutionsNumber,
-            { c, r -> r.contentEquals(c.flatMap { listOf(it.toLong(), it.toLong()) }.toLongArray()) },
+            { c, r -> r.contentEquals(c.flatMap { listOf(it?.toLong() ?: 0L, it?.toLong() ?: 0L) }.toLongArray()) },
             coverage = FullWithAssumptions(assumeCallsNumber = 1)
         )
     }

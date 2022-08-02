@@ -95,7 +95,7 @@ public class LongStreamExample {
     double[] mapToDoubleExample(List<Short> list) {
         UtMock.assume(list != null && !list.isEmpty());
 
-        final LongToDoubleFunction mapper = value -> (double) value;
+        final LongToDoubleFunction mapper = value -> (double) value / 2;
         final ToLongFunction<Short> shortToLongFunction = value -> value == null ? 0 : value.longValue();
         final LongStream longs = list.stream().mapToLong(shortToLongFunction);
 
