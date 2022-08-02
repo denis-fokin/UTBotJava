@@ -73,17 +73,30 @@ public class Integer {
         if (i == 0x80000000) { // java.lang.MIN_VALUE
             return "-2147483648";
         }
-        // assumes are placed here to limit search space of solver
-        // and reduce time of solving queries with bv2int expressions
-        assumeOrExecuteConcretely(i <= 0x8000);
-        assumeOrExecuteConcretely(i >= -0x8000);
+
         // condition = i < 0
         boolean condition = less(i, 0);
         // prefix = condition ? "-" : ""
         String prefix = ite(condition, "-", "");
-        UtStringBuilder sb = new UtStringBuilder(prefix);
-        // value = condition ? -i : i
         int value = ite(condition, -i, i);
-        return sb.append(value).toString();
+        char[] reversed = new char[10];
+        int offset = 0;
+        while (value > 0) {
+            reversed[offset] = (char) ('0' + value % 10);
+            value = value / 10;
+            offset++;
+        }
+
+        if (offset > 0) {
+            char[] buffer = new char[offset];
+            int counter = 0;
+            while (offset > 0) {
+                offset--;
+                buffer[counter++] = reversed[offset];
+            }
+            return prefix + new String(buffer);
+        } else {
+            return "0";
+        }
     }
 }

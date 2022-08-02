@@ -69,13 +69,13 @@ public class Byte {
             }
 
             if (offset > 0) {
-                char[] repr = new char[offset];
-                int i = 0;
+                char[] buffer = new char[offset];
+                int counter = 0;
                 while (offset > 0) {
                     offset--;
-                    repr[i++] = reversed[offset];
+                    buffer[counter++] = reversed[offset];
                 }
-                return prefix + new String(repr);
+                return prefix + new String(buffer);
             } else {
                 return "0";
             }
