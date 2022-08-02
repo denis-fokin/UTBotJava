@@ -52,6 +52,18 @@ public class ClassWithStaticAndInnerClasses {
     }
 
     public static class PublicStaticClassWithPrivateField {
+
+        public static class MegaInner {
+            public int g(int x) {
+                return x + 1;
+            }
+        }
+
+        public class MegaInner2 {
+            public int h(int x) {
+                return x + 2;
+            }
+        }
         private int x;
 
         public PublicStaticClassWithPrivateField(int x) {

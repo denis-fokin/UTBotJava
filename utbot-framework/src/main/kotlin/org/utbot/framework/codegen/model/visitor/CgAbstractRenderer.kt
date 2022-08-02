@@ -136,7 +136,7 @@ internal abstract class CgAbstractRenderer(val context: CgContext, val printer: 
 
     override fun visit(element: CgTestClassBody) {
         // render regions for test methods and utils
-        for ((i, region) in (element.regions + element.utilsRegion).withIndex()) {
+        for ((i, region) in (element.regions + element.innerClassesRegion + element.utilsRegion).withIndex()) {
             if (i != 0) println()
 
             region.accept(this)

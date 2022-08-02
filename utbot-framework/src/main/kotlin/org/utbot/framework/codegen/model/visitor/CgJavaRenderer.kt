@@ -1,6 +1,7 @@
 package org.utbot.framework.codegen.model.visitor
 
 import org.apache.commons.text.StringEscapeUtils
+import org.utbot.framework.codegen.Junit5
 import org.utbot.framework.codegen.RegularImport
 import org.utbot.framework.codegen.StaticImport
 import org.utbot.framework.codegen.model.constructor.context.CgContext
@@ -62,7 +63,10 @@ internal class CgJavaRenderer(context: CgContext, printer: CgPrinter = CgPrinter
         for (annotation in element.annotations) {
             annotation.accept(this)
         }
-        print("public class ")
+        if (element.outerMost || context.testFramework == Junit5)
+            print("public class ")
+        else
+            print("public static class ")
         print(element.simpleName)
         if (element.superclass != null) {
             print(" extends ${element.superclass.asString()}")

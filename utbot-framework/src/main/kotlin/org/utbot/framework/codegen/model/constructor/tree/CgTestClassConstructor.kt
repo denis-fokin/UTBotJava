@@ -1,19 +1,27 @@
 package org.utbot.framework.codegen.model.constructor.tree
 
+import org.junit.experimental.runners.Enclosed
 import org.utbot.common.appendHtmlLine
 import org.utbot.engine.displayName
+import org.utbot.framework.codegen.Junit4
+import org.utbot.framework.codegen.Junit5
 import org.utbot.framework.codegen.ParametrizedTestSource
 import org.utbot.framework.codegen.model.constructor.CgMethodTestSet
+import org.utbot.framework.codegen.TestNg
 import org.utbot.framework.codegen.model.constructor.context.CgContext
 import org.utbot.framework.codegen.model.constructor.context.CgContextOwner
 import org.utbot.framework.codegen.model.constructor.util.CgComponents
 import org.utbot.framework.codegen.model.constructor.util.CgStatementConstructor
 import org.utbot.framework.codegen.model.tree.CgMethod
 import org.utbot.framework.codegen.model.tree.CgExecutableUnderTestCluster
+import org.utbot.framework.codegen.model.tree.CgGetJavaClass
+import org.utbot.framework.codegen.model.tree.CgMultipleArgsAnnotation
 import org.utbot.framework.codegen.model.tree.CgParameterDeclaration
 import org.utbot.framework.codegen.model.tree.CgRegion
 import org.utbot.framework.codegen.model.tree.CgSimpleRegion
+import org.utbot.framework.codegen.model.tree.CgSingleArgAnnotation
 import org.utbot.framework.codegen.model.tree.CgStaticsRegion
+import org.utbot.framework.codegen.model.tree.CgTestClass
 import org.utbot.framework.codegen.model.tree.CgTestClassFile
 import org.utbot.framework.codegen.model.tree.CgTestMethod
 import org.utbot.framework.codegen.model.tree.CgTestMethodCluster
@@ -23,11 +31,15 @@ import org.utbot.framework.codegen.model.tree.CgUtilMethod
 import org.utbot.framework.codegen.model.tree.buildTestClass
 import org.utbot.framework.codegen.model.tree.buildTestClassBody
 import org.utbot.framework.codegen.model.tree.buildTestClassFile
+import org.utbot.framework.codegen.model.util.createTestClassName
 import org.utbot.framework.codegen.model.visitor.importUtilMethodDependencies
 import org.utbot.framework.plugin.api.ExecutableId
+import org.utbot.framework.plugin.api.BuiltinClassId
 import org.utbot.framework.plugin.api.MethodId
 import org.utbot.framework.plugin.api.UtMethodTestSet
+import org.utbot.framework.codegen.model.constructor.UtTestClass
 import org.utbot.framework.plugin.api.util.description
+import org.utbot.framework.plugin.api.util.id
 import org.utbot.framework.plugin.api.util.kClass
 import kotlin.reflect.KClass
 
@@ -42,39 +54,90 @@ internal class CgTestClassConstructor(val context: CgContext) :
 
     private val testsGenerationReport: TestsGenerationReport = TestsGenerationReport()
 
+    private fun generateTestClassName(testClass: UtTestClass, customName: String? = null): Pair<String, String> {
+        // TODO: obtain test class from plugin
+        val packagePrefix = if (testClassPackageName.isNotEmpty()) "$testClassPackageName." else ""
+        val simpleName = customName ?: "${createTestClassName(testClass.classUnderTest.id.prettifiedName)}Test"
+        return "$packagePrefix$simpleName" to simpleName
+    }
+
     /**
      * Given a list of test sets constructs CgTestClass
      */
-    fun construct(testSets: Collection<CgMethodTestSet>): CgTestClassFile {
+    fun construct(testClass: UtTestClass): CgTestClassFile {
         return buildTestClassFile {
-            testClass = buildTestClass {
-                // TODO: obtain test class from plugin
-                id = currentTestClass
-                body = buildTestClassBody {
-                    cgDataProviderMethods.clear()
-                    for (testSet in testSets) {
-                        updateCurrentExecutable(testSet.executableId)
-                        val currentMethodUnderTestRegions = construct(testSet) ?: continue
-                        val executableUnderTestCluster = CgExecutableUnderTestCluster(
-                            "Test suites for executable $currentExecutable",
-                            currentMethodUnderTestRegions
-                        )
-                        testMethodRegions += executableUnderTestCluster
-                    }
-
-                    dataProvidersAndUtilMethodsRegion += CgStaticsRegion(
-                        "Data providers and utils methods",
-                        cgDataProviderMethods + createUtilMethods()
-                    )
-                }
-                // It is important that annotations, superclass and interfaces assignment is run after
-                // all methods are generated so that all necessary info is already present in the context
-                annotations += context.collectedTestClassAnnotations
-                superclass = context.testClassSuperclass
-                interfaces += context.collectedTestClassInterfaces
-            }
+            this.testClass = constructTestClass(testClass, true, context.testClassCustomName)
             imports += context.collectedImports
             testsGenerationReport = this@CgTestClassConstructor.testsGenerationReport
+        }
+    }
+
+    private fun constructTestClass(testClass: UtTestClass, outerMost: Boolean = false, customClassName: String? = null): CgTestClass {
+        return buildTestClass {
+            val (name, simpleName) = generateTestClassName(testClass, customClassName)
+            id = BuiltinClassId(
+                name = name,
+                canonicalName = name,
+                simpleName = simpleName
+            )
+            this.outerMost = outerMost
+            if (context.testFramework == Junit4 && testClass.innerClasses.isNotEmpty()) {
+                val annotation = CgSingleArgAnnotation(
+                    Junit4.runWithAnnotationClassId,
+                    CgGetJavaClass(Enclosed::class.id))
+                    addAnnotation(annotation)
+                    this.annotations += annotation
+            }
+            if (!outerMost) {
+                when (context.testFramework) {
+                    Junit4 -> {
+                    }
+                    Junit5 -> {
+                        val annotation = CgMultipleArgsAnnotation(Junit5.nestedTestClassAnnotationId, mutableListOf())
+                        addAnnotation(annotation)
+                        this.annotations += annotation
+                    }
+                    TestNg -> {}
+                }
+            }
+            body = buildTestClassBody {
+                // cgDataProviderMethods.clear()
+
+                for (innerClass in testClass.innerClasses) {
+                    innerClassesRegions += CgSimpleRegion(
+                        "Tests for ${innerClass.classUnderTest.simpleName}",
+                        listOf(constructTestClass(innerClass))
+                    )
+                }
+
+                for (testSet in testClass.methodTestSets) {
+                    updateCurrentExecutable(testSet.executableId)
+                    val currentMethodUnderTestRegions = construct(testSet) ?: continue
+                    val executableUnderTestCluster = CgExecutableUnderTestCluster(
+                        "Test suites for executable $currentExecutable",
+                        currentMethodUnderTestRegions
+                    )
+                    testMethodRegions += executableUnderTestCluster
+                }
+
+                val utilMethods = if (outerMost) {
+                    cgDataProviderMethods + createUtilMethods()
+                } else {
+                    listOf()
+                    //cgDataProviderMethods
+                }
+                dataProvidersAndUtilMethodsRegion += CgStaticsRegion(
+                    "Data providers and utils methods",
+                    utilMethods
+                )
+            }
+            // It is important that annotations, superclass and interfaces assignment is run after
+            // all methods are generated so that all necessary info is already present in the context
+            annotations += context.collectedTestClassAnnotations
+            if (outerMost) {
+                superclass = context.testClassSuperclass
+            }
+            interfaces += context.collectedTestClassInterfaces
         }
     }
 

@@ -96,4 +96,19 @@ internal class ClassWithStaticAndInnerClassesTest : UtValueTestCaseChecker(testC
             coverage = DoNotCalculate
         )
     }
+
+    @Test
+    fun testPublicStaticClassWithPublicField_createFromConst() {
+        checkAllCombinations(
+            ClassWithStaticAndInnerClasses.PublicStaticClassWithPrivateField.MegaInner2::h,
+            ClassWithStaticAndInnerClasses::class
+        )
+    }
+    @Test
+    fun testPublicInnerClassWithPrivateField_createFromIncrement() {
+        checkAllCombinations(
+            ClassWithStaticAndInnerClasses.PublicInnerClassWithPrivateField::createFromIncrement,
+            ClassWithStaticAndInnerClasses::class
+        )
+    }
 }

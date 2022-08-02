@@ -115,7 +115,7 @@ abstract class CodeGenerationIntegrationTest(
                                 lastStage = codeGenerationTestCases.languagePipelines.single { it.language == language }.lastStage,
                                 status = ExecutionStatus.SUCCESS
                             ),
-                            codeGenerationTestCases.testSets
+                            codeGenerationTestCases.generatedTestSets
                         )
                     }
 
@@ -148,7 +148,7 @@ abstract class CodeGenerationIntegrationTest(
 
         data class CodeGenerationTestCases(
             val testClass: KClass<*>,
-            val testSets: List<UtMethodTestSet>,
+            val generatedTestSets: List<UtMethodTestSet>,
             val languagePipelines: List<CodeGenerationLanguageLastStage>
         )
 

@@ -27,9 +27,10 @@ class CgTestClassBuilder : CgBuilder<CgTestClass> {
     val annotations: MutableList<CgAnnotation> = mutableListOf()
     var superclass: ClassId? = null
     val interfaces: MutableList<ClassId> = mutableListOf()
+    var outerMost: Boolean = false
     lateinit var body: CgTestClassBody
 
-    override fun build() = CgTestClass(id, annotations, superclass, interfaces, body)
+    override fun build() = CgTestClass(id, annotations, superclass, interfaces, body, outerMost)
 }
 
 fun buildTestClass(init: CgTestClassBuilder.() -> Unit) = CgTestClassBuilder().apply(init).build()
@@ -39,7 +40,9 @@ class CgTestClassBodyBuilder : CgBuilder<CgTestClassBody> {
 
     val dataProvidersAndUtilMethodsRegion: MutableList<CgRegion<CgElement>> = mutableListOf()
 
-    override fun build() = CgTestClassBody(testMethodRegions, dataProvidersAndUtilMethodsRegion)
+    val innerClassesRegions: MutableList<CgRegion<CgTestClass>> = mutableListOf()
+
+    override fun build() = CgTestClassBody(testMethodRegions, dataProvidersAndUtilMethodsRegion, innerClassesRegions)
 }
 
 fun buildTestClassBody(init: CgTestClassBodyBuilder.() -> Unit) = CgTestClassBodyBuilder().apply(init).build()

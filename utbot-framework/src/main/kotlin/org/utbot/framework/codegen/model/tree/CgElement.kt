@@ -120,6 +120,7 @@ data class CgTestClass(
     val superclass: ClassId?,
     val interfaces: List<ClassId>,
     val body: CgTestClassBody,
+    val outerMost: Boolean
 ) : CgElement {
     val packageName = id.packageName
     val simpleName = id.simpleName
@@ -127,7 +128,8 @@ data class CgTestClass(
 
 data class CgTestClassBody(
     val testMethodRegions: List<CgExecutableUnderTestCluster>,
-    val utilsRegion: List<CgRegion<CgElement>>
+    val utilsRegion: List<CgRegion<CgElement>>,
+    val innerClassesRegion: List<CgRegion<CgTestClass>>
 ) : CgElement {
     val regions: List<CgRegion<*>>
         get() = testMethodRegions

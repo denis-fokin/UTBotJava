@@ -1576,12 +1576,12 @@ internal class CgMethodConstructor(val context: CgContext) : CgContextOwner by c
         when (testFramework) {
             Junit5 -> setOf(
                 annotation(testFramework.parameterizedTestAnnotationId),
-                annotation(testFramework.methodSourceAnnotationId, dataProviderMethodName),
+                annotation(testFramework.methodSourceAnnotationId, "${context.currentTestClass.canonicalName}#$dataProviderMethodName"),
             )
             TestNg -> setOf(
                 annotation(
                     testFramework.parameterizedTestAnnotationId,
-                    listOf("dataProvider" to CgLiteral(stringClassId, dataProviderMethodName))
+                    listOf("dataProvider" to CgLiteral(stringClassId, "${context.currentTestClass.canonicalName}#$dataProviderMethodName"))
                 ),
             )
             Junit4 -> error("Parameterized tests are not supported for JUnit4")

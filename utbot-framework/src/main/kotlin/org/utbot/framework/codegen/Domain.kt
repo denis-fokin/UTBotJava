@@ -440,6 +440,12 @@ object Junit5 : TestFramework("JUnit5") {
         arguments = arrayOf(longClassId)
     )
 
+    val nestedTestClassAnnotationId = BuiltinClassId(
+        name = "$JUNIT5_PACKAGE.Nested",
+        canonicalName = "$JUNIT5_PACKAGE.Nested",
+        simpleName = "Nested"
+    )
+
     override val testAnnotationId = BuiltinClassId(
         name = "$JUNIT5_PACKAGE.Test",
         canonicalName = "$JUNIT5_PACKAGE.Test",
