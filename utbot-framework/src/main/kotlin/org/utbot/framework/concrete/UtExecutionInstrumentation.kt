@@ -107,7 +107,6 @@ object UtExecutionInstrumentation : Instrumentation<UtConcreteExecutionResult> {
         arguments: ArgumentList,
         parameters: Any?
     ): UtConcreteExecutionResult {
-        withReflection {
         if (parameters !is UtConcreteExecutionData) {
             throw IllegalArgumentException("Argument parameters must be of type UtConcreteExecutionData, but was: ${parameters?.javaClass}")
         }
@@ -175,7 +174,6 @@ object UtExecutionInstrumentation : Instrumentation<UtConcreteExecutionResult> {
             }
 
             concreteExecutionResult
-        }
         }
     }
 
