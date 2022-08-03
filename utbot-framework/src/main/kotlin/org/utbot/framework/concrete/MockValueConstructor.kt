@@ -46,6 +46,8 @@ import org.mockito.Mockito
 import org.mockito.stubbing.Answer
 import org.objectweb.asm.Type
 import org.utbot.common.withAccessibility
+import java.security.AccessController
+import java.security.PrivilegedAction
 
 /**
  * Constructs values (including mocks) from models.
@@ -217,7 +219,7 @@ class MockValueConstructor(
     }
 
     private fun generateMockitoMock(clazz: Class<*>, mocks: Map<ExecutableId, List<UtModel>>): Any {
-        return Mockito.mock(clazz, generateMockitoAnswer(mocks))
+        return AccessController.doPrivileged(PrivilegedAction { Mockito.mock(clazz, generateMockitoAnswer(mocks)) })
     }
 
     private fun computeConcreteValuesForMethods(
